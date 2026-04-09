@@ -1848,7 +1848,7 @@ function LoginScreen({ onLogin }) {
       `}</style>
       <div style={{ fontFamily: '"DM Sans", system-ui, sans-serif', background: "#FFFFFF", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", WebkitFontSmoothing: "antialiased" }}>
         <div style={{ animation: "fadeIn 0.8s ease both", textAlign: "center", marginBottom: 48 }}>
-          <img src="/ccb_os_transparent.png" alt="CCB OS - Built by DWD" style={{ width: 320, height: "auto" }} />
+          <img src="/ccb_os_logo.png" alt="CCB OS - Built by DWD" style={{ width: 320, height: "auto" }} />
         </div>
 
         <div style={{ animation: "fadeIn 0.8s 0.2s ease both", width: 380, background: "#FFFFFF", border: "1px solid #E4E2DE", borderRadius: 16, padding: "36px 32px", boxShadow: "0 8px 40px rgba(0,0,0,0.08)" }}>
