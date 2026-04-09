@@ -2538,7 +2538,7 @@ export default function NextWavePlatform() {
     <>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <style>{`
-        *{box-sizing:border-box;margin:0} body{background:${C.bg}}
+        *{box-sizing:border-box;margin:0} body{background:${C.bg}!important}
         ::selection{background:${C.accentSoft};color:${C.accent}}
         input:focus,select:focus,textarea:focus{border-color:${C.accent}!important;outline:none}
         @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
