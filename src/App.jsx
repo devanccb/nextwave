@@ -1824,7 +1824,79 @@ const API_URL = "https://nextwave-api-g5g6f3f7cvg4cnef.centralus-01.azurewebsite
 // @app/shell — Main Application Component
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// @app/login — Login Screen
+// Future: replace with Microsoft Entra ID authentication
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function LoginScreen({ onLogin }) {
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [loginError, setLoginError] = useState("");
+
+  const handleLogin = () => {
+    if (loginForm.email && loginForm.password) { onLogin(); setLoginError(""); }
+    else { setLoginError("Enter your email and password"); }
+  };
+
+  return (
+    <>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,700&display=swap" rel="stylesheet" />
+      <style>{`
+        * { box-sizing: border-box; margin: 0; }
+        body { background: #0A0A0A; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+      <div style={{ fontFamily: '"DM Sans", system-ui, sans-serif', background: "#0A0A0A", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", WebkitFontSmoothing: "antialiased" }}>
+        <div style={{ animation: "fadeIn 0.8s ease both", textAlign: "center", marginBottom: 48 }}>
+          <div style={{ marginBottom: 8 }}>
+            <span style={{ fontSize: 80, fontWeight: 700, color: "#C42B2B", letterSpacing: "-0.02em", fontStyle: "italic", lineHeight: 1 }}>CCB</span>
+            <span style={{ fontSize: 38, fontWeight: 700, color: "#C42B2B", letterSpacing: "0.08em", verticalAlign: "bottom", marginLeft: 6 }}>OS</span>
+          </div>
+          <div style={{ fontSize: 15, color: "rgba(255,255,255,0.3)", letterSpacing: "0.3em", fontWeight: 500, fontStyle: "italic" }}>Built by DWD</div>
+        </div>
+
+        <div style={{ animation: "fadeIn 0.8s 0.2s ease both", width: 380, background: "#141414", border: "1px solid #222", borderRadius: 16, padding: "36px 32px", boxShadow: "0 24px 80px rgba(0,0,0,0.5)" }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 4, textAlign: "center" }}>Sign In</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 28, textAlign: "center" }}>Access your development operations platform</div>
+
+          {loginError && (
+            <div style={{ background: "rgba(196,43,43,0.1)", border: "1px solid rgba(196,43,43,0.3)", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#C42B2B" }}>{loginError}</div>
+          )}
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Email</label>
+            <input type="email" value={loginForm.email} onChange={e => setLoginForm(p => ({ ...p, email: e.target.value }))} placeholder="you@ccb-llc.com"
+              style={{ width: "100%", padding: "12px 14px", background: "#0A0A0A", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 14, fontFamily: '"DM Sans", system-ui, sans-serif', outline: "none", transition: "border-color 0.2s" }}
+              onFocus={e => e.target.style.borderColor = "#C42B2B"} onBlur={e => e.target.style.borderColor = "#333"} />
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Password</label>
+            <input type="password" value={loginForm.password} onChange={e => setLoginForm(p => ({ ...p, password: e.target.value }))} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+              style={{ width: "100%", padding: "12px 14px", background: "#0A0A0A", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 14, fontFamily: '"DM Sans", system-ui, sans-serif', outline: "none", transition: "border-color 0.2s" }}
+              onFocus={e => e.target.style.borderColor = "#C42B2B"} onBlur={e => e.target.style.borderColor = "#333"}
+              onKeyDown={e => { if (e.key === "Enter") handleLogin(); }} />
+          </div>
+
+          <button onClick={handleLogin}
+            style={{ width: "100%", padding: "13px", background: "#C42B2B", border: "none", borderRadius: 8, color: "#fff", fontSize: 14, fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", fontFamily: '"DM Sans", system-ui, sans-serif', transition: "background 0.2s" }}
+            onMouseEnter={e => e.target.style.background = "#A82020"} onMouseLeave={e => e.target.style.background = "#C42B2B"}
+          >Sign In</button>
+
+          <div style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "rgba(255,255,255,0.2)" }}>Secure access \u00B7 CCB Development Operations</div>
+        </div>
+
+        <div style={{ animation: "fadeIn 0.8s 0.4s ease both", marginTop: 48, fontSize: 11, color: "rgba(255,255,255,0.15)", textAlign: "center" }}>
+          \u00A9 {new Date().getFullYear()} CCB LLC \u00B7 All rights reserved
+        </div>
+      </div>
+    </>
+  );
+}
+
+
 export default function NextWavePlatform() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [view, setView] = useState("home");
@@ -1858,6 +1930,9 @@ export default function NextWavePlatform() {
   }, []);
 
   useEffect(() => { fetchProjects(); }, [fetchProjects]);
+
+  // Gate: show login screen if not authenticated
+  if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
   const createNewProject = () => {
     setForm({ name:"",address:"",city:"",state:"",development_type:"Modular Residential",lot_count:"",notes:"",total_budget:"",land_cost:"",target_price_per_home:"",estimated_revenue:"",start_date:"",estimated_completion:"" });
