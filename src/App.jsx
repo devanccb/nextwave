@@ -1868,7 +1868,7 @@ function LoginScreen({ onLogin }) {
 
           <div style={{ marginBottom: 24 }}>
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#7D7B76", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Password</label>
-            <input type="password" value={loginForm.password} onChange={e => setLoginForm(p => ({ ...p, password: e.target.value }))} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+            <input type="password" value={loginForm.password} onChange={e => setLoginForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••"
               style={{ width: "100%", padding: "12px 14px", background: "#FFFFFF", border: "1px solid #DDDBD7", borderRadius: 8, color: "#1A1917", fontSize: 14, fontFamily: '"DM Sans", system-ui, sans-serif', outline: "none", transition: "border-color 0.2s" }}
               onFocus={e => e.target.style.borderColor = "#C42B2B"} onBlur={e => e.target.style.borderColor = "#DDDBD7"}
               onKeyDown={e => { if (e.key === "Enter") handleLogin(); }} />
@@ -1879,11 +1879,11 @@ function LoginScreen({ onLogin }) {
             onMouseEnter={e => e.target.style.background = "#A82020"} onMouseLeave={e => e.target.style.background = "#C42B2B"}
           >Sign In</button>
 
-          <div style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "rgba(255,255,255,0.2)" }}>Secure access \u00B7 CCB Development Operations</div>
+          <div style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "rgba(255,255,255,0.2)" }}>Secure access · CCB Development Operations</div>
         </div>
 
         <div style={{ animation: "fadeIn 0.8s 0.4s ease both", marginTop: 48, fontSize: 11, color: "#CCC", textAlign: "center" }}>
-          \u00A9 {new Date().getFullYear()} CCB LLC \u00B7 All rights reserved
+          © {new Date().getFullYear()} CCB LLC · All rights reserved
         </div>
       </div>
     </>
@@ -2290,7 +2290,7 @@ export default function NextWavePlatform() {
                         <span style={{ fontSize:18 }}>{tool?.icon || "\uD83D\uDCC1"}</span>
                         <div style={{ flex:1,minWidth:0 }}>
                           <div style={{ fontSize:12,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{o.label || "Output"}</div>
-                          <div style={{ fontSize:10,color:C.textMuted }}>{tool?.name || o._key} \u00B7 {new Date(o.created_at).toLocaleDateString()}</div>
+                          <div style={{ fontSize:10,color:C.textMuted }}>{tool?.name || o._key} · {new Date(o.created_at).toLocaleDateString()}</div>
                         </div>
                         {o.data?.computed?.grossProfit !== undefined && (
                           <div style={{ textAlign:"right",flexShrink:0 }}>
@@ -2313,7 +2313,7 @@ export default function NextWavePlatform() {
                 <span style={{ fontSize:14 }}>\uD83D\uDD17</span>
                 <div>
                   <div style={{ fontSize:12,fontWeight:600,color:C.accent }}>Financials synced from Pro Forma</div>
-                  <div style={{ fontSize:11,color:C.textMuted }}>Revenue and profit projections updated {new Date(p.financials._proforma_synced).toLocaleDateString()} \u00B7 Margin: {p.financials._proforma_margin || 0}%</div>
+                  <div style={{ fontSize:11,color:C.textMuted }}>Revenue and profit projections updated {new Date(p.financials._proforma_synced).toLocaleDateString()} · Margin: {p.financials._proforma_margin || 0}%</div>
                 </div>
               </div>
             </div>
