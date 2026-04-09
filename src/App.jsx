@@ -1815,23 +1815,49 @@ const INITIAL_SAMPLES = [
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// @config/api — API Configuration
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const API_URL = "https://nextwave-api-g5g6f3f7cvg4cnef.centralus-01.azurewebsites.net/api";
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // @app/shell — Main Application Component
-// Future: split into shell.tsx, workspace.tsx, home.tsx, forms.tsx
-// State management: currently React useState, future: Zustand or Redux
-// Data layer: currently in-memory, future: Azure SQL via API
-// Auth: future: Microsoft Entra ID (Azure AD)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export default function NextWavePlatform() {
-  const [projects, setProjects] = useState(() => INITIAL_SAMPLES);
-  const [activeProjectId, setActiveProjectId] = useState(() => INITIAL_SAMPLES[0].id);
-  const [view, setView] = useState("workspace");
+  const [projects, setProjects] = useState([]);
+  const [activeProjectId, setActiveProjectId] = useState(null);
+  const [view, setView] = useState("home");
+  const [loading, setLoading] = useState(true);
   const [activeTool, setActiveTool] = useState(null);
-  const [wsTab, setWsTab] = useState("overview"); // overview | financials | tools | outputs
+  const [wsTab, setWsTab] = useState("overview");
   const [form, setForm] = useState({});
   const [toast, setToast] = useState(null);
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
   const activeProject = projects.find((p) => p.id === activeProjectId) || null;
+
+  // Fetch projects from API on load
+  const fetchProjects = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/projects`);
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(data);
+        if (!activeProjectId && data.length > 0) setActiveProjectId(data[0].id);
+      } else {
+        console.error("API error:", res.status);
+        setProjects(INITIAL_SAMPLES); // Fallback to sample data
+      }
+    } catch (err) {
+      console.error("API unreachable, using sample data:", err.message);
+      setProjects(INITIAL_SAMPLES); // Fallback if API is down
+      if (!activeProjectId) setActiveProjectId(INITIAL_SAMPLES[0].id);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchProjects(); }, [fetchProjects]);
 
   const createNewProject = () => {
     setForm({ name:"",address:"",city:"",state:"",development_type:"Modular Residential",lot_count:"",notes:"",total_budget:"",land_cost:"",target_price_per_home:"",estimated_revenue:"",start_date:"",estimated_completion:"" });
@@ -1842,29 +1868,43 @@ export default function NextWavePlatform() {
     setForm({ name:p.project_info.name,address:p.project_info.address,city:p.project_info.city,state:p.project_info.state,development_type:p.project_info.development_type,lot_count:p.project_info.lot_count.toString(),notes:p.project_info.notes,total_budget:p.financials.total_budget.toString(),land_cost:p.financials.land_cost.toString(),target_price_per_home:p.financials.target_price_per_home.toString(),estimated_revenue:p.financials.estimated_revenue.toString(),start_date:p.timeline.start_date,estimated_completion:p.timeline.estimated_completion });
     setView("edit");
   };
-  const saveProject = (isEdit) => {
+  const saveProject = async (isEdit) => {
     if (!form.name.trim()) return;
-    if (isEdit && activeProject) {
-      setProjects(prev=>prev.map(p=>p.id===activeProject.id?{...p,updated_at:new Date().toISOString(),project_info:{...p.project_info,name:form.name,address:form.address,city:form.city,state:form.state,development_type:form.development_type,lot_count:parseInt(form.lot_count)||0,notes:form.notes},financials:{...p.financials,total_budget:parseFloat(form.total_budget)||0,land_cost:parseFloat(form.land_cost)||0,target_price_per_home:parseFloat(form.target_price_per_home)||0,estimated_revenue:parseFloat(form.estimated_revenue)||0},timeline:{...p.timeline,start_date:form.start_date,estimated_completion:form.estimated_completion}}:p));
-      addActivity(activeProject.id, "project_updated", `Project details updated`);
-      showToast("Project updated"); setView("workspace");
-    } else {
-      const np=createProject({project_info:{name:form.name,address:form.address,city:form.city,state:form.state,development_type:form.development_type,lot_count:parseInt(form.lot_count)||0,notes:form.notes},financials:{total_budget:parseFloat(form.total_budget)||0,land_cost:parseFloat(form.land_cost)||0,target_price_per_home:parseFloat(form.target_price_per_home)||0,estimated_revenue:parseFloat(form.estimated_revenue)||0},timeline:{start_date:form.start_date,estimated_completion:form.estimated_completion,milestones:[]},activity:[{id:crypto.randomUUID(),action:"project_created",detail:"Project created",icon:"\u2728",timestamp:new Date().toISOString()}]});
-      setProjects(prev=>[...prev,np]); setActiveProjectId(np.id); setWsTab("overview"); showToast("Project created"); setView("workspace");
+    const body = {
+      project_info: { name:form.name, address:form.address, city:form.city, state:form.state, development_type:form.development_type, lot_count:parseInt(form.lot_count)||0, notes:form.notes },
+      financials: { total_budget:parseFloat(form.total_budget)||0, land_cost:parseFloat(form.land_cost)||0, target_price_per_home:parseFloat(form.target_price_per_home)||0, estimated_revenue:parseFloat(form.estimated_revenue)||0 },
+      timeline: { start_date:form.start_date||null, estimated_completion:form.estimated_completion||null },
+    };
+    try {
+      if (isEdit && activeProject) {
+        await fetch(`${API_URL}/projects/${activeProject.id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+        showToast("Project updated");
+      } else {
+        const res = await fetch(`${API_URL}/projects`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+        const data = await res.json();
+        if (data.id) { setActiveProjectId(data.id); setWsTab("overview"); }
+        showToast("Project created");
+      }
+      await fetchProjects();
+      setView(isEdit ? "workspace" : "workspace");
+    } catch (err) {
+      console.error("Save failed:", err);
+      showToast("Save failed — check connection");
     }
   };
-  const [confirmDelete, setConfirmDelete] = useState(null); // project id pending deletion
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleteInput, setDeleteInput] = useState("");
-  const deleteProject = (id) => {
+  const deleteProject = async (id) => {
     if (confirmDelete === id && deleteInput === "DELETE") {
-      setProjects(prev=>prev.filter(p=>p.id!==id));
-      if(activeProjectId===id){setActiveProjectId(null);setView("home");}
-      setConfirmDelete(null);
-      setDeleteInput("");
-      showToast("Project deleted");
+      try {
+        await fetch(`${API_URL}/projects/${id}`, { method:"DELETE" });
+        if(activeProjectId===id){setActiveProjectId(null);setView("home");}
+        setConfirmDelete(null); setDeleteInput("");
+        await fetchProjects();
+        showToast("Project deleted");
+      } catch (err) { showToast("Delete failed"); }
     } else if (confirmDelete !== id) {
-      setConfirmDelete(id);
-      setDeleteInput("");
+      setConfirmDelete(id); setDeleteInput("");
     }
   };
   const cancelDelete = () => { setConfirmDelete(null); setDeleteInput(""); };
@@ -1872,28 +1912,36 @@ export default function NextWavePlatform() {
   const addActivity = (projectId, action, detail) => {
     setProjects(prev => prev.map(p => p.id === projectId ? { ...p, activity: [{ id: crypto.randomUUID(), action, detail, icon: ACTIVITY_ICONS[action] || "\u25CF", timestamp: new Date().toISOString() }, ...(p.activity || []).slice(0, 49)] } : p));
   };
-  const handleToolSave = (output) => {
+  const handleToolSave = async (output) => {
     if(!activeTool||!activeProject) return;
     const pid = activeProject.id;
-    // Save output to project
-    setProjects(prev=>prev.map(p=>p.id===pid?{...p,updated_at:new Date().toISOString(),tool_outputs:{...p.tool_outputs,[activeTool.output_key]:[...(p.tool_outputs[activeTool.output_key]||[]),output]}}:p));
-    addActivity(pid, "tool_output", `${activeTool.name}: ${output.label || "Output saved"}`);
-    // Pro forma sync: update projected revenue/profit from saved scenario
-    if (activeTool.id === "proforma" && output.data?.computed) {
-      const c = output.data.computed;
-      if (c.grossSales) {
-        setProjects(prev => prev.map(p => p.id === pid ? { ...p, financials: { ...p.financials, estimated_revenue: Math.round(c.grossSales), _proforma_profit: Math.round(c.grossProfit || c.netProfit || 0), _proforma_margin: parseFloat(c.margin) || 0, _proforma_synced: new Date().toISOString() } } : p));
-        addActivity(pid, "financial_sync", `Financial projections synced from Pro Forma (${output.data.scenario} scenario)`);
+    try {
+      await fetch(`${API_URL}/projects/${pid}/outputs`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ tool_id:activeTool.id, output_key:activeTool.output_key, label:output.label||"Output", data:output.data||{} })
+      });
+      // Pro forma sync
+      if (activeTool.id === "proforma" && output.data?.computed?.grossSales) {
+        const c = output.data.computed;
+        await fetch(`${API_URL}/projects/${pid}`, {
+          method:"PUT", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ ...activeProject, financials:{ ...activeProject.financials, estimated_revenue:Math.round(c.grossSales) } })
+        });
       }
+      await fetchProjects();
+      showToast(`Saved to ${activeTool.name}`);
+    } catch (err) {
+      showToast("Save failed");
     }
-    showToast(`Saved to ${activeTool.name}`); setActiveTool(null); setView("workspace");
+    setActiveTool(null); setView("workspace");
   };
-  const deleteOutput = (key, id) => {
+  const deleteOutput = async (key, id) => {
     if(!activeProject) return;
-    const output = activeProject.tool_outputs[key]?.find(o => o.id === id);
-    setProjects(prev=>prev.map(p=>p.id===activeProject.id?{...p,tool_outputs:{...p.tool_outputs,[key]:p.tool_outputs[key].filter(o=>o.id!==id)}}:p));
-    addActivity(activeProject.id, "output_deleted", `Removed ${output?.label || "output"} from ${TOOL_REGISTRY.find(t=>t.output_key===key)?.name || key}`);
-    showToast("Output deleted");
+    try {
+      await fetch(`${API_URL}/outputs/${id}`, { method:"DELETE" });
+      await fetchProjects();
+      showToast("Output deleted");
+    } catch (err) { showToast("Delete failed"); }
   };
   const exportProject = () => {
     if(!activeProject) return;
@@ -1903,7 +1951,6 @@ export default function NextWavePlatform() {
     link.href = "data:application/json;base64," + b64;
     link.download = `${activeProject.project_info.name.replace(/\s+/g,"_")}_export.json`;
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    addActivity(activeProject.id, "project_exported", `Project data exported as JSON`);
     showToast("Project exported");
   };
 
@@ -2442,6 +2489,13 @@ export default function NextWavePlatform() {
           </div>
         </header>
         <main style={{ flex:1,padding:"28px 32px",maxWidth:1200,width:"100%",margin:"0 auto",animation:"fadeUp 0.25s ease" }}>
+          {loading ? (
+            <div style={{ textAlign:"center",padding:"120px 0" }}>
+              <div style={{ fontSize:32,marginBottom:16 }}>⚡</div>
+              <div style={{ fontSize:16,fontWeight:600,color:C.text,marginBottom:4 }}>Loading Next Wave...</div>
+              <div style={{ fontSize:13,color:C.textMuted }}>Connecting to database</div>
+            </div>
+          ) : (<>
           {view==="home"&&renderHome()}
           {view==="create"&&renderForm(false)}
           {view==="edit"&&renderForm(true)}
@@ -2449,6 +2503,7 @@ export default function NextWavePlatform() {
           {view==="tool"&&activeTool?.component&&activeProject&&(
             <activeTool.component project={activeProject} onSave={handleToolSave} onClose={()=>{setActiveTool(null);setView("workspace");}} />
           )}
+          </>)}
         </main>
         {toast&&(<div style={{ position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",background:C.surface,border:`1px solid ${C.accent}`,color:C.accent,padding:"10px 22px",borderRadius:10,fontSize:13,fontWeight:600,boxShadow:"0 4px 16px rgba(0,0,0,0.08)",animation:"toastIn 0.2s ease",zIndex:100 }}>{toast}</div>)}
       </div>
