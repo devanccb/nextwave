@@ -1927,9 +1927,6 @@ export default function NextWavePlatform() {
 
   useEffect(() => { fetchProjects(); }, [fetchProjects]);
 
-  // Gate: show login screen if not authenticated
-  if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
-
   const createNewProject = () => {
     setForm({ name:"",address:"",city:"",state:"",development_type:"Modular Residential",lot_count:"",notes:"",total_budget:"",land_cost:"",target_price_per_home:"",estimated_revenue:"",start_date:"",estimated_completion:"" });
     setView("create");
@@ -2533,6 +2530,8 @@ export default function NextWavePlatform() {
       )}
     </div>);
   };
+
+  if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
   return (
     <>
