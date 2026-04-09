@@ -1843,38 +1843,34 @@ function LoginScreen({ onLogin }) {
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,700&display=swap" rel="stylesheet" />
       <style>{`
         * { box-sizing: border-box; margin: 0; }
-        body { background: #0A0A0A; }
+        body { background: #FFFFFF; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
-      <div style={{ fontFamily: '"DM Sans", system-ui, sans-serif', background: "#0A0A0A", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", WebkitFontSmoothing: "antialiased" }}>
+      <div style={{ fontFamily: '"DM Sans", system-ui, sans-serif', background: "#FFFFFF", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", WebkitFontSmoothing: "antialiased" }}>
         <div style={{ animation: "fadeIn 0.8s ease both", textAlign: "center", marginBottom: 48 }}>
-          <div style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 80, fontWeight: 700, color: "#C42B2B", letterSpacing: "-0.02em", fontStyle: "italic", lineHeight: 1 }}>CCB</span>
-            <span style={{ fontSize: 38, fontWeight: 700, color: "#C42B2B", letterSpacing: "0.08em", verticalAlign: "bottom", marginLeft: 6 }}>OS</span>
-          </div>
-          <div style={{ fontSize: 15, color: "rgba(255,255,255,0.3)", letterSpacing: "0.3em", fontWeight: 500, fontStyle: "italic" }}>Built by DWD</div>
+          <img src="/ccb_os_transparent.png" alt="CCB OS - Built by DWD" style={{ width: 320, height: "auto" }} />
         </div>
 
-        <div style={{ animation: "fadeIn 0.8s 0.2s ease both", width: 380, background: "#141414", border: "1px solid #222", borderRadius: 16, padding: "36px 32px", boxShadow: "0 24px 80px rgba(0,0,0,0.5)" }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 4, textAlign: "center" }}>Sign In</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 28, textAlign: "center" }}>Access your development operations platform</div>
+        <div style={{ animation: "fadeIn 0.8s 0.2s ease both", width: 380, background: "#FFFFFF", border: "1px solid #E4E2DE", borderRadius: 16, padding: "36px 32px", boxShadow: "0 8px 40px rgba(0,0,0,0.08)" }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#1A1917", marginBottom: 4, textAlign: "center" }}>Sign In</div>
+          <div style={{ fontSize: 13, color: "#7D7B76", marginBottom: 28, textAlign: "center" }}>Access your development operations platform</div>
 
           {loginError && (
             <div style={{ background: "rgba(196,43,43,0.1)", border: "1px solid rgba(196,43,43,0.3)", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#C42B2B" }}>{loginError}</div>
           )}
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Email</label>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#7D7B76", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Email</label>
             <input type="email" value={loginForm.email} onChange={e => setLoginForm(p => ({ ...p, email: e.target.value }))} placeholder="you@ccb-llc.com"
-              style={{ width: "100%", padding: "12px 14px", background: "#0A0A0A", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 14, fontFamily: '"DM Sans", system-ui, sans-serif', outline: "none", transition: "border-color 0.2s" }}
-              onFocus={e => e.target.style.borderColor = "#C42B2B"} onBlur={e => e.target.style.borderColor = "#333"} />
+              style={{ width: "100%", padding: "12px 14px", background: "#FFFFFF", border: "1px solid #DDDBD7", borderRadius: 8, color: "#1A1917", fontSize: 14, fontFamily: '"DM Sans", system-ui, sans-serif', outline: "none", transition: "border-color 0.2s" }}
+              onFocus={e => e.target.style.borderColor = "#C42B2B"} onBlur={e => e.target.style.borderColor = "#DDDBD7"} />
           </div>
 
           <div style={{ marginBottom: 24 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Password</label>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#7D7B76", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Password</label>
             <input type="password" value={loginForm.password} onChange={e => setLoginForm(p => ({ ...p, password: e.target.value }))} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
-              style={{ width: "100%", padding: "12px 14px", background: "#0A0A0A", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 14, fontFamily: '"DM Sans", system-ui, sans-serif', outline: "none", transition: "border-color 0.2s" }}
-              onFocus={e => e.target.style.borderColor = "#C42B2B"} onBlur={e => e.target.style.borderColor = "#333"}
+              style={{ width: "100%", padding: "12px 14px", background: "#FFFFFF", border: "1px solid #DDDBD7", borderRadius: 8, color: "#1A1917", fontSize: 14, fontFamily: '"DM Sans", system-ui, sans-serif', outline: "none", transition: "border-color 0.2s" }}
+              onFocus={e => e.target.style.borderColor = "#C42B2B"} onBlur={e => e.target.style.borderColor = "#DDDBD7"}
               onKeyDown={e => { if (e.key === "Enter") handleLogin(); }} />
           </div>
 
@@ -1886,7 +1882,7 @@ function LoginScreen({ onLogin }) {
           <div style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "rgba(255,255,255,0.2)" }}>Secure access \u00B7 CCB Development Operations</div>
         </div>
 
-        <div style={{ animation: "fadeIn 0.8s 0.4s ease both", marginTop: 48, fontSize: 11, color: "rgba(255,255,255,0.15)", textAlign: "center" }}>
+        <div style={{ animation: "fadeIn 0.8s 0.4s ease both", marginTop: 48, fontSize: 11, color: "#CCC", textAlign: "center" }}>
           \u00A9 {new Date().getFullYear()} CCB LLC \u00B7 All rights reserved
         </div>
       </div>
