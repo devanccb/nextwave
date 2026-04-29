@@ -2429,93 +2429,6 @@ export default function NextWavePlatform() {
         </div>
       </div>
 
-      {/* ━━━ EXECUTIVE BAND ━━━ */}
-      <div style={{ background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,marginBottom:12,overflow:"hidden" }}>
-        <div style={{ display:"grid",gridTemplateColumns:"1fr 1px 1fr 1px 1fr",alignItems:"stretch" }}>
-
-          {/* Budget Status */}
-          <div style={{ padding:"20px 24px" }}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
-              <span style={{ fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.15em" }}>Budget</span>
-              <span style={{ fontSize:10,fontWeight:700,color:onBudget?C.positive:overBudget?C.negative:"#D4913B",padding:"2px 6px",borderRadius:3,background:(onBudget?C.positive:overBudget?C.negative:"#D4913B")+"10" }}>
-                {onBudget?"On Track":overBudget?"Over Budget":"Watch"}
-              </span>
-            </div>
-            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14 }}>
-              <div><div style={{ fontSize:20,fontWeight:700,color:C.text,fontVariantNumeric:"tabular-nums" }}>{cur(p.financials.total_budget)}</div><div style={{ fontSize:10,color:C.textMuted,marginTop:2 }}>Original Budget</div></div>
-              <div><div style={{ fontSize:20,fontWeight:700,color:currentForecast>p.financials.total_budget*1.03?C.negative:C.text,fontVariantNumeric:"tabular-nums" }}>{cur(currentForecast)}</div><div style={{ fontSize:10,color:C.textMuted,marginTop:2 }}>Forecast</div></div>
-            </div>
-            <div style={{ width:"100%",height:6,background:C.borderLight,borderRadius:3,overflow:"hidden" }}>
-              <div style={{ width:`${p.financials.total_budget>0?Math.min(100,Math.round(spent/p.financials.total_budget*100)):0}%`,height:"100%",background:overBudget?C.negative:C.accent,borderRadius:3,transition:"width 0.3s" }} />
-            </div>
-            <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:C.textMuted,marginTop:4 }}>
-              <span>{cur(spent)} spent</span>
-              <span>{cur(remaining)} remaining</span>
-            </div>
-          </div>
-
-          <div style={{ background:C.borderLight }} />
-
-          {/* Schedule Status */}
-          <div style={{ padding:"20px 24px" }}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
-              <span style={{ fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.15em" }}>Schedule</span>
-              <span style={{ fontSize:10,fontWeight:700,color:isOverdue?C.negative:C.positive,padding:"2px 6px",borderRadius:3,background:(isOverdue?C.negative:C.positive)+"10" }}>
-                {isOverdue?"Behind":"On Track"}
-              </span>
-            </div>
-            {start && end ? (<>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14 }}>
-                <div><div style={{ fontSize:20,fontWeight:700,color:C.text }}>{pctTimeline}%</div><div style={{ fontSize:10,color:C.textMuted,marginTop:2 }}>Elapsed</div></div>
-                <div><div style={{ fontSize:20,fontWeight:700,color:isOverdue?C.negative:C.text }}>{isOverdue?`+${Math.abs(daysRemaining)}d`:daysRemaining+"d"}</div><div style={{ fontSize:10,color:C.textMuted,marginTop:2 }}>{isOverdue?"Overdue":"Remaining"}</div></div>
-              </div>
-              <div style={{ width:"100%",height:6,background:C.borderLight,borderRadius:3,overflow:"hidden" }}>
-                <div style={{ width:`${pctTimeline}%`,height:"100%",background:isOverdue?C.negative:C.accent,borderRadius:3,transition:"width 0.3s" }} />
-              </div>
-              <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:C.textMuted,marginTop:4 }}>
-                <span>{start.toLocaleDateString("en-US",{month:"short",year:"numeric"})}</span>
-                <span>{end.toLocaleDateString("en-US",{month:"short",year:"numeric"})}</span>
-              </div>
-            </>) : (
-              <p style={{ fontSize:12,color:C.textMuted,margin:"8px 0 0" }}>Set dates to enable tracking</p>
-            )}
-          </div>
-
-          <div style={{ background:C.borderLight }} />
-
-          {/* Projected Outcome + Recent */}
-          <div style={{ padding:"20px 24px" }}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
-              <span style={{ fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.15em" }}>Projected Outcome</span>
-              <span style={{ fontSize:10,fontWeight:700,color:projectedMargin>=15?C.positive:projectedMargin>=5?"#D4913B":C.negative,padding:"2px 6px",borderRadius:3,background:(projectedMargin>=15?C.positive:projectedMargin>=5?"#D4913B":C.negative)+"10" }}>
-                {projectedMargin}% margin
-              </span>
-            </div>
-            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16 }}>
-              <div><div style={{ fontSize:20,fontWeight:700,color:projectedProfit>=0?C.positive:C.negative,fontVariantNumeric:"tabular-nums" }}>{cur(projectedProfit)}</div><div style={{ fontSize:10,color:C.textMuted,marginTop:2 }}>Est. Profit</div></div>
-              <div><div style={{ fontSize:20,fontWeight:700,color:C.text,fontVariantNumeric:"tabular-nums" }}>{cur(projectedRevenue)}</div><div style={{ fontSize:10,color:C.textMuted,marginTop:2 }}>Revenue</div></div>
-            </div>
-            {lastActivity && (
-              <div style={{ borderTop:`1px solid ${C.borderLight}`,paddingTop:10 }}>
-                <div style={{ fontSize:10,fontWeight:600,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:4 }}>Last Update</div>
-                <div style={{ fontSize:12,color:C.text,fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{lastActivity.icon} {lastActivity.detail}</div>
-                <div style={{ fontSize:10,color:C.textMuted,marginTop:1 }}>{lastActivityAgo}</div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Alert strip — compact, only if needed */}
-        {healthAlerts.length > 0 && (
-          <div style={{ borderTop:`1px solid ${C.borderLight}`,padding:"10px 24px",display:"flex",gap:16,flexWrap:"wrap",background:healthAlerts.some(a=>a.severity==="high")?"rgba(196,86,75,0.02)":"transparent" }}>
-            {healthAlerts.map((a,i) => (
-              <span key={i} style={{ fontSize:11,color:a.severity==="high"?C.negative:a.severity==="medium"?"#D4913B":C.textMuted,fontWeight:500 }}>
-                <span style={{ fontWeight:700 }}>{a.severity==="high"?"\u26A0":"\u25B2"} {a.label}</span>: {a.detail}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* Workspace Tabs */}
       <div style={{ display:"flex",borderBottom:`1px solid ${C.border}`,marginBottom:20,gap:4 }}>
@@ -2526,139 +2439,290 @@ export default function NextWavePlatform() {
       </div>
 
       {/* ── OVERVIEW TAB ── */}
-      {wsTab === "overview" && (<div style={{ display:"grid",gridTemplateColumns:"2fr 1fr",gap:16 }}>
-        {/* Left column */}
-        <div>
-          {/* Health Alerts (from the financial model) */}
-          {healthAlerts.length > 0 && (
-            <div style={{...panel,padding:"16px 18px",marginBottom:14 }}>
-              <h4 style={{ margin:"0 0 10px",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",color:C.textMuted }}>Alerts &amp; Risks</h4>
-              <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                {healthAlerts.map((a,i) => (
-                  <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,padding:"8px 12px",borderRadius:8,background:a.severity==="high"?"rgba(196,86,75,0.04)":a.severity==="medium"?"rgba(212,145,59,0.04)":"rgba(59,139,202,0.03)" }}>
-                    <span style={{ fontSize:14,flexShrink:0,marginTop:1 }}>{a.severity==="high"?"\uD83D\uDED1":a.severity==="medium"?"\u26A0\uFE0F":"\u2139\uFE0F"}</span>
-                    <div><div style={{ fontSize:12,fontWeight:700,color:a.severity==="high"?C.negative:a.severity==="medium"?"#D4913B":C.accent }}>{a.label}</div><div style={{ fontSize:12,color:C.text,marginTop:1 }}>{a.detail}</div></div>
+      {wsTab === "overview" && (<div>
+        {/* ━━━ PROJECT TIMELINE BANNER ━━━ */}
+        <div style={{...panel,padding:0,overflow:"hidden",marginBottom:16}}>
+          {/* Illustrated Mountain/Construction Banner */}
+          <div style={{ position:"relative",height:140,background:"linear-gradient(135deg,#e8f4fd 0%,#d1ecf9 30%,#b8e0f3 60%,#e0f0e8 100%)",overflow:"hidden" }}>
+            <div style={{ position:"absolute",bottom:0,left:0,right:0,height:80 }}>
+              <svg viewBox="0 0 1200 80" fill="none" style={{ width:"100%",height:"100%" }} preserveAspectRatio="none">
+                <path d="M0,60 Q100,20 200,45 T400,30 T600,50 T800,25 T1000,40 T1200,35 L1200,80 L0,80 Z" fill="#7ab87a" opacity="0.4"/>
+                <path d="M0,70 Q150,40 300,55 T600,45 T900,60 T1200,50 L1200,80 L0,80 Z" fill="#5a9a5a" opacity="0.5"/>
+              </svg>
+            </div>
+            {/* Mountains */}
+            <svg viewBox="0 0 1200 140" fill="none" style={{ position:"absolute",inset:0,width:"100%",height:"100%" }} preserveAspectRatio="xMidYMid slice">
+              <path d="M0,140 L150,50 L300,90 L450,30 L550,70 L650,20 L800,80 L950,40 L1100,70 L1200,50 L1200,140 Z" fill="#c5d8e8" opacity="0.5"/>
+              <path d="M0,140 L100,70 L200,100 L350,55 L500,90 L600,45 L750,85 L900,55 L1050,80 L1200,60 L1200,140 Z" fill="#a3c4d9" opacity="0.4"/>
+              {/* Construction crane */}
+              <g transform="translate(950,15)">
+                <line x1="0" y1="0" x2="0" y2="80" stroke="#f59e0b" strokeWidth="3"/>
+                <line x1="-5" y1="0" x2="60" y2="0" stroke="#f59e0b" strokeWidth="2.5"/>
+                <line x1="0" y1="0" x2="60" y2="20" stroke="#f59e0b" strokeWidth="1.5"/>
+                <line x1="0" y1="0" x2="-20" y2="0" stroke="#f59e0b" strokeWidth="2"/>
+                <rect x="-3" y="70" width="6" height="10" fill="#f59e0b"/>
+                <line x1="55" y1="0" x2="55" y2="30" stroke="#666" strokeWidth="1" strokeDasharray="2,2"/>
+                <rect x="50" y="28" width="10" height="8" fill="#f59e0b" opacity="0.8"/>
+              </g>
+              {/* House outline */}
+              <g transform="translate(1050,50)">
+                <rect x="0" y="15" width="40" height="30" fill="#e8d5b0" stroke="#c4a67a" strokeWidth="1.5"/>
+                <path d="M-5,15 L20,0 L45,15" fill="#c0392b" stroke="#a93226" strokeWidth="1.5"/>
+                <rect x="15" y="28" width="10" height="17" fill="#8b6914"/>
+                <rect x="5" y="22" width="8" height="8" fill="#87ceeb" stroke="#5fa8d3" strokeWidth="0.5"/>
+                <rect x="27" y="22" width="8" height="8" fill="#87ceeb" stroke="#5fa8d3" strokeWidth="0.5"/>
+              </g>
+            </svg>
+            <div style={{ position:"absolute",top:20,left:28 }}>
+              <div style={{ fontSize:15,fontWeight:700,color:"#2c5f7c",textTransform:"uppercase",letterSpacing:"0.1em" }}>Project Timeline</div>
+            </div>
+          </div>
+          {/* Phase Stepper */}
+          <div style={{ padding:"24px 32px 28px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8 }}>
+            {[
+              { id:"pre-dev", label:"Pre-Development", icon:"📋" },
+              { id:"planning", label:"Planning", icon:"📅" },
+              { id:"entitlements", label:"Entitlements", icon:"📑" },
+              { id:"design", label:"Design", icon:"✂️" },
+              { id:"construction", label:"Construction", icon:"🏗️" },
+              { id:"closeout", label:"Closeout", icon:"🏠" },
+            ].map((phase, idx, arr) => {
+              const phaseMap = {"Pre-Development":0,"Land & Entitlement":1,"Design & Permitting":2,"Site Work":3,"Vertical Construction":4,"Sales & Closeout":5,"Complete":5};
+              const currentIdx = phaseMap[projectPhase.name] || 0;
+              const isActive = idx === currentIdx;
+              const isDone = idx < currentIdx;
+              return (<div key={phase.id} style={{ display:"flex",alignItems:"center",flex:1 }}>
+                <div style={{ display:"flex",flexDirection:"column",alignItems:"center",flex:1 }}>
+                  <div style={{ width:48,height:48,borderRadius:"50%",border:`2px solid ${isActive ? C.accent : isDone ? C.positive : C.border}`,background:isActive ? C.accentSoft : isDone ? "rgba(76,153,106,0.08)" : C.surface,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,position:"relative" }}>
+                    {phase.icon}
+                    {isActive && <div style={{ position:"absolute",bottom:-4,width:8,height:8,borderRadius:"50%",background:C.accent }} />}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Project Notes */}
-          {p.project_info.notes && (
-            <div style={{...panel,marginBottom:14}}>
-              <h4 style={{ margin:"0 0 8px",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",color:C.textMuted }}>Project Notes</h4>
-              <p style={{ fontSize:14,lineHeight:1.7,color:C.text,margin:0 }}>{p.project_info.notes}</p>
-            </div>
-          )}
-
-          {/* Latest Saved Outputs — connected to all tools */}
-          {(() => {
-            const allOutputs = Object.entries(p.tool_outputs).flatMap(([key, outputs]) => outputs.map(o => ({ ...o, _key: key }))).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
-            if (allOutputs.length === 0) return null;
-            return (
-              <div style={{...panel,marginBottom:14}}>
-                <h4 style={{ margin:"0 0 10px",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",color:C.textMuted }}>Latest Project Outputs</h4>
-                <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                  {allOutputs.map(o => {
-                    const tool = TOOL_REGISTRY.find(t => t.output_key === o._key);
-                    return (
-                      <div key={o.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:C.surfaceAlt,borderRadius:8 }}>
-                        <span style={{ fontSize:18 }}>{tool?.icon || "\uD83D\uDCC1"}</span>
-                        <div style={{ flex:1,minWidth:0 }}>
-                          <div style={{ fontSize:12,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{o.label || "Output"}</div>
-                          <div style={{ fontSize:10,color:C.textMuted }}>{tool?.name || o._key} · {new Date(o.created_at).toLocaleDateString()}</div>
-                        </div>
-                        {o.data?.computed?.grossProfit !== undefined && (
-                          <div style={{ textAlign:"right",flexShrink:0 }}>
-                            <div style={{ fontSize:12,fontWeight:700,color:o.data.computed.grossProfit>=0?C.positive:C.negative }}>{cur(o.data.computed.grossProfit)}</div>
-                            <div style={{ fontSize:9,color:C.textMuted }}>profit</div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                  <div style={{ fontSize:11,fontWeight:isActive?700:500,color:isActive?C.accent:isDone?C.positive:C.textMuted,marginTop:8,textAlign:"center" }}>{phase.label}</div>
+                  <div style={{ fontSize:9,color:isActive?C.accent:C.textMuted,fontWeight:600,marginTop:2 }}>{isActive?"Current":isDone?"Done":"Upcoming"}</div>
                 </div>
-              </div>
-            );
-          })()}
-
-          {/* Pro Forma Sync Indicator */}
-          {p.financials._proforma_synced && (
-            <div style={{...panel,padding:"12px 16px",marginBottom:14,borderColor:"rgba(59,139,202,0.2)",background:"rgba(59,139,202,0.03)" }}>
-              <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                <span style={{ fontSize:14 }}>\uD83D\uDD17</span>
-                <div>
-                  <div style={{ fontSize:12,fontWeight:600,color:C.accent }}>Financials synced from Pro Forma</div>
-                  <div style={{ fontSize:11,color:C.textMuted }}>Revenue and profit projections updated {new Date(p.financials._proforma_synced).toLocaleDateString()} · Margin: {p.financials._proforma_margin || 0}%</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Monthly Chart */}
-          {monthlyData.length > 0 && (
-            <div style={{...panel,padding:"16px 14px 10px"}}>
-              <h4 style={{ margin:"0 0 10px",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",color:C.textMuted,padding:"0 8px" }}>Monthly Cost vs Revenue</h4>
-              <ResponsiveContainer width="100%" height={190}>
-                <BarChart data={monthlyData} margin={{top:5,right:10,bottom:5,left:0}}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.borderLight} />
-                  <XAxis dataKey="month" tick={{fontSize:9,fill:C.textMuted}} interval={Math.max(0,Math.floor(monthlyData.length/8)-1)} />
-                  <YAxis tick={{fontSize:9,fill:C.textMuted}} tickFormatter={v=>curK(v)} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="planned" name="Planned" fill={C.accent} opacity={0.3} radius={[2,2,0,0]} />
-                  <Bar dataKey="actual" name="Actual" fill={C.accent} radius={[2,2,0,0]} />
-                  <Bar dataKey="revenue" name="Revenue" fill={C.positive} radius={[2,2,0,0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+                {idx < arr.length - 1 && <div style={{ height:2,flex:"0 0 40px",background:isDone?C.positive:C.borderLight,marginTop:24,marginLeft:-4,marginRight:-4 }} />}
+              </div>);
+            })}
+          </div>
         </div>
 
-        {/* Right column */}
-        <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
-          {/* Quick Project Stats */}
+        {/* ━━━ 4-COLUMN KPI CARDS ━━━ */}
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16 }}>
+          {/* Budget Card */}
           <div style={panel}>
-            <h4 style={{ margin:"0 0 10px",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",color:C.textMuted }}>Project Summary</h4>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
+              <span style={{ fontSize:13,fontWeight:700,color:C.text }}>Budget</span>
+              <span style={{ fontSize:10,fontWeight:700,color:onBudget?C.positive:overBudget?C.negative:"#D4913B",padding:"3px 8px",borderRadius:4,background:(onBudget?C.positive:overBudget?C.negative:"#D4913B")+"12" }}>
+                {onBudget?"On Track":overBudget?"Over Budget":"Watch"}
+              </span>
+            </div>
+            <div style={{ fontSize:26,fontWeight:700,color:C.text,fontVariantNumeric:"tabular-nums",marginBottom:6 }}>{cur(p.financials.total_budget)}</div>
+            <div style={{ fontSize:11,color:C.textMuted,marginBottom:12 }}>{cur(spent)} spent / {cur(remaining)} remaining</div>
+            <div style={{ width:"100%",height:6,background:C.borderLight,borderRadius:3,overflow:"hidden" }}>
+              <div style={{ width:`${p.financials.total_budget>0?Math.min(100,Math.round(spent/p.financials.total_budget*100)):0}%`,height:"100%",background:overBudget?C.negative:C.accent,borderRadius:3,transition:"width 0.3s" }} />
+            </div>
+          </div>
+
+          {/* Schedule Card */}
+          <div style={panel}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
+              <span style={{ fontSize:13,fontWeight:700,color:C.text }}>Schedule</span>
+              <span style={{ fontSize:10,fontWeight:700,color:isOverdue?C.negative:C.positive,padding:"3px 8px",borderRadius:4,background:(isOverdue?C.negative:C.positive)+"12" }}>
+                {isOverdue?"Behind":"On Track"}
+              </span>
+            </div>
+            {start && end ? (<>
+              <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
+                <span style={{ fontSize:16 }}>📅</span>
+                <span style={{ fontSize:13,color:C.text,fontWeight:500 }}>
+                  {start.toLocaleDateString("en-US",{month:"short",year:"numeric"})} — {end.toLocaleDateString("en-US",{month:"short",year:"numeric"})}
+                </span>
+              </div>
+              <div style={{ fontSize:11,color:C.textMuted,marginBottom:12 }}>{pctTimeline}% scheduled</div>
+              <div style={{ width:"100%",height:6,background:C.borderLight,borderRadius:3,overflow:"hidden" }}>
+                <div style={{ width:`${pctTimeline}%`,height:"100%",background:isOverdue?C.negative:C.accent,borderRadius:3,transition:"width 0.3s" }} />
+              </div>
+            </>) : (
+              <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
+                <span style={{ fontSize:16 }}>📅</span>
+                <span style={{ fontSize:13,color:C.textMuted }}>Set dates to enable tracking</span>
+              </div>
+            )}
+          </div>
+
+          {/* Outcome Card */}
+          <div style={panel}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
+              <span style={{ fontSize:13,fontWeight:700,color:C.text }}>Outcome</span>
+              <span style={{ fontSize:10,fontWeight:700,color:projectedMargin>=15?C.positive:projectedMargin>=5?"#D4913B":C.negative,padding:"3px 8px",borderRadius:4,background:(projectedMargin>=15?C.positive:projectedMargin>=5?"#D4913B":C.negative)+"12" }}>
+                {projectedMargin}% margin
+              </span>
+            </div>
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
+              <div>
+                <div style={{ fontSize:22,fontWeight:700,color:projectedProfit>=0?C.text:C.negative,fontVariantNumeric:"tabular-nums" }}>{cur(projectedProfit)}</div>
+                <div style={{ fontSize:10,color:C.textMuted,marginTop:2 }}>Est. Profit</div>
+              </div>
+              <div>
+                <div style={{ fontSize:22,fontWeight:700,color:C.text,fontVariantNumeric:"tabular-nums" }}>{cur(projectedRevenue)}</div>
+                <div style={{ fontSize:10,color:C.textMuted,marginTop:2 }}>Revenue</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Last Update Card */}
+          <div style={panel}>
+            <div style={{ fontSize:13,fontWeight:700,color:C.text,marginBottom:12 }}>Last Update</div>
+            {lastActivity ? (
+              <div>
+                <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:4 }}>
+                  <span style={{ fontSize:16 }}>⭐</span>
+                  <span style={{ fontSize:13,fontWeight:500,color:C.text }}>{lastActivity.detail}</span>
+                </div>
+                <div style={{ fontSize:11,color:C.textMuted }}>{lastActivityAgo}</div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:4 }}>
+                  <span style={{ fontSize:16 }}>⭐</span>
+                  <span style={{ fontSize:13,fontWeight:500,color:C.text }}>Project created</span>
+                </div>
+                <div style={{ fontSize:11,color:C.textMuted }}>{timeAgo(p.created_at)}</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ━━━ ALERT STRIP ━━━ */}
+        {healthAlerts.length > 0 && (
+          <div style={{ background:"rgba(255,243,230,0.6)",border:"1px solid rgba(212,145,59,0.25)",borderRadius:10,padding:"12px 20px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+              <span style={{ fontSize:16 }}>⚠️</span>
+              <span style={{ fontSize:13,color:"#c17a1a" }}>
+                <strong>{healthAlerts[0].label}:</strong> {healthAlerts[0].detail}
+              </span>
+            </div>
+            <span style={{ fontSize:16,color:"#D4913B" }}>›</span>
+          </div>
+        )}
+
+        {/* ━━━ BOTTOM SECTION: PROJECT SUMMARY + WHAT'S NEXT ━━━ */}
+        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:16 }}>
+          {/* Project Summary */}
+          <div style={panel}>
+            <h4 style={{ margin:"0 0 16px",fontSize:14,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",color:C.text }}>Project Summary</h4>
             {[
               {l:"Development Type",v:p.project_info.development_type},
-              {l:"Total Lots",v:p.project_info.lot_count || "\u2014"},
+              {l:"Total Lots",v:p.project_info.lot_count || "—"},
               {l:"Per Home Target",v:cur(p.financials.target_price_per_home)},
               {l:"Land Cost",v:cur(p.financials.land_cost)},
               {l:"Last Updated",v:new Date(p.updated_at).toLocaleDateString()},
               {l:"Tool Outputs",v:totalOutputs},
             ].map((s,i) => (
-              <div key={i} style={{ display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:i<5?`1px solid ${C.borderLight}`:"none" }}>
-                <span style={{ fontSize:12,color:C.textMuted }}>{s.l}</span>
-                <span style={{ fontSize:12,fontWeight:600,color:C.text }}>{s.v}</span>
+              <div key={i} style={{ display:"flex",justifyContent:"space-between",padding:"9px 0",borderBottom:i<5?`1px solid ${C.borderLight}`:"none" }}>
+                <span style={{ fontSize:13,color:C.textMuted }}>{s.l}</span>
+                <span style={{ fontSize:13,fontWeight:600,color:C.text }}>{s.v}</span>
               </div>
             ))}
           </div>
 
-          {/* Activity Feed */}
-          <div style={{...panel,flex:1}}>
-            <h4 style={{ margin:"0 0 12px",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",color:C.textMuted }}>Recent Activity</h4>
-            {(!p.activity || p.activity.length === 0) ? (
-              <p style={{ color:C.textMuted,fontSize:12,textAlign:"center",padding:"16px 0" }}>No activity yet.</p>
-            ) : (
-              <div style={{ display:"flex",flexDirection:"column",gap:0 }}>
-                {(p.activity || []).slice(0,12).map((a,i) => {
-                  const ts = new Date(a.timestamp);
-                  const ago = timeAgo(a.timestamp);
+          {/* What's Next */}
+          <div style={{...panel,position:"relative",overflow:"hidden"}}>
+            <h4 style={{ margin:"0 0 16px",fontSize:14,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",color:C.text }}>What's Next</h4>
+            <div style={{ position:"relative",zIndex:2 }}>
+              {[
+                { done: !!p.timeline.start_date, label: "Set project dates" },
+                { done: (p.timeline.milestones||[]).length > 0, label: "Define milestones" },
+                { done: p.financials.total_budget > 0, label: "Review budget assumptions" },
+              ].map((item, i) => (
+                <div key={i} style={{ display:"flex",alignItems:"center",gap:12,marginBottom:14 }}>
+                  <div style={{ width:24,height:24,borderRadius:"50%",border:`2px solid ${item.done ? C.positive : C.border}`,background:item.done ? C.positive : "transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                    {item.done && <span style={{ color:"#fff",fontSize:12,fontWeight:700 }}>✓</span>}
+                  </div>
+                  <span style={{ fontSize:14,color:item.done ? C.textMuted : C.text,fontWeight:500,textDecoration:item.done?"line-through":"none" }}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+            {/* House illustration */}
+            <svg viewBox="0 0 200 160" fill="none" style={{ position:"absolute",bottom:-10,right:-10,width:180,opacity:0.2 }}>
+              <rect x="30" y="60" width="140" height="100" fill="#4c996a"/>
+              <path d="M10,60 L100,10 L190,60" fill="#c0392b"/>
+              <rect x="75" y="100" width="50" height="60" fill="#8b6914"/>
+              <rect x="40" y="75" width="30" height="25" fill="#87ceeb"/>
+              <rect x="130" y="75" width="30" height="25" fill="#87ceeb"/>
+            </svg>
+          </div>
+        </div>
+
+        {/* ━━━ PROJECT NOTES (if present) ━━━ */}
+        {p.project_info.notes && (
+          <div style={{...panel,marginTop:16}}>
+            <h4 style={{ margin:"0 0 8px",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",color:C.textMuted }}>Project Notes</h4>
+            <p style={{ fontSize:14,lineHeight:1.7,color:C.text,margin:0 }}>{p.project_info.notes}</p>
+          </div>
+        )}
+
+        {/* ━━━ Latest Saved Outputs ━━━ */}
+        {(() => {
+          const allOutputs = Object.entries(p.tool_outputs).flatMap(([key, outputs]) => outputs.map(o => ({ ...o, _key: key }))).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+          if (allOutputs.length === 0) return null;
+          return (
+            <div style={{...panel,marginTop:16}}>
+              <h4 style={{ margin:"0 0 10px",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",color:C.textMuted }}>Latest Project Outputs</h4>
+              <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                {allOutputs.map(o => {
+                  const tool = TOOL_REGISTRY.find(t => t.output_key === o._key);
                   return (
-                    <div key={a.id||i} style={{ display:"flex",gap:8,padding:"8px 0",borderBottom:i<Math.min((p.activity||[]).length-1,11)?`1px solid ${C.borderLight}`:"none" }}>
-                      <span style={{ fontSize:13,flexShrink:0,marginTop:1 }}>{a.icon || "\u25CF"}</span>
+                    <div key={o.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:C.surfaceAlt,borderRadius:8 }}>
+                      <span style={{ fontSize:18 }}>{tool?.icon || "📁"}</span>
                       <div style={{ flex:1,minWidth:0 }}>
-                        <div style={{ fontSize:12,fontWeight:500,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{a.detail}</div>
-                        <div style={{ fontSize:10,color:C.textMuted }}>{ago}</div>
+                        <div style={{ fontSize:12,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{o.label || "Output"}</div>
+                        <div style={{ fontSize:10,color:C.textMuted }}>{tool?.name || o._key} · {new Date(o.created_at).toLocaleDateString()}</div>
                       </div>
+                      {o.data?.computed?.grossProfit !== undefined && (
+                        <div style={{ textAlign:"right",flexShrink:0 }}>
+                          <div style={{ fontSize:12,fontWeight:700,color:o.data.computed.grossProfit>=0?C.positive:C.negative }}>{cur(o.data.computed.grossProfit)}</div>
+                          <div style={{ fontSize:9,color:C.textMuted }}>profit</div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
-            )}
+            </div>
+          );
+        })()}
+
+        {/* Pro Forma Sync Indicator */}
+        {p.financials._proforma_synced && (
+          <div style={{...panel,padding:"12px 16px",marginTop:16,borderColor:"rgba(59,139,202,0.2)",background:"rgba(59,139,202,0.03)" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+              <span style={{ fontSize:14 }}>🔗</span>
+              <div>
+                <div style={{ fontSize:12,fontWeight:600,color:C.accent }}>Financials synced from Pro Forma</div>
+                <div style={{ fontSize:11,color:C.textMuted }}>Revenue and profit projections updated {new Date(p.financials._proforma_synced).toLocaleDateString()} · Margin: {p.financials._proforma_margin || 0}%</div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Monthly Chart */}
+        {monthlyData.length > 0 && (
+          <div style={{...panel,padding:"16px 14px 10px",marginTop:16}}>
+            <h4 style={{ margin:"0 0 10px",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",color:C.textMuted,padding:"0 8px" }}>Monthly Cost vs Revenue</h4>
+            <ResponsiveContainer width="100%" height={190}>
+              <BarChart data={monthlyData} margin={{top:5,right:10,bottom:5,left:0}}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.borderLight} />
+                <XAxis dataKey="month" tick={{fontSize:9,fill:C.textMuted}} interval={Math.max(0,Math.floor(monthlyData.length/8)-1)} />
+                <YAxis tick={{fontSize:9,fill:C.textMuted}} tickFormatter={v=>curK(v)} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="planned" name="Planned" fill={C.accent} opacity={0.3} radius={[2,2,0,0]} />
+                <Bar dataKey="actual" name="Actual" fill={C.accent} radius={[2,2,0,0]} />
+                <Bar dataKey="revenue" name="Revenue" fill={C.positive} radius={[2,2,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>)}
 
       {/* ── FINANCIALS TAB ── */}
@@ -2811,6 +2875,18 @@ export default function NextWavePlatform() {
     </div>);
   };
 
+  // ── Sidebar Nav Items ──
+  const sidebarItems = [
+    { id:"overview", icon:"🏠", label:"Overview" },
+    { id:"dashboard", icon:"📊", label:"Dashboard" },
+    { id:"tasks", icon:"✅", label:"Tasks" },
+    { id:"reports", icon:"📋", label:"Reports" },
+    { id:"documents", icon:"📄", label:"Documents" },
+    { id:"templates", icon:"✨", label:"Templates" },
+    { id:"settings", icon:"⚙️", label:"Settings" },
+  ];
+  const sidebarTab = view === "workspace" ? wsTab : view === "home" ? "dashboard" : "overview";
+
   if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
   return (
@@ -2825,28 +2901,74 @@ export default function NextWavePlatform() {
         ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:3px}
         input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;cursor:pointer}
       `}</style>
-      <div style={{ fontFamily:font,background:C.bg,color:C.text,minHeight:"100vh",display:"flex",flexDirection:"column",WebkitFontSmoothing:"antialiased" }}>
-        {/* Header */}
-        <header style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 28px",background:C.surface,borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,zIndex:50 }}>
-          <div style={{ display:"flex",alignItems:"center",gap:14,cursor:"pointer" }} onClick={()=>{setActiveProjectId(null);setView("home");}}>
-            <img src={NW_LOGO_TAG} alt="Next Wave" style={{ height:42,width:"auto" }} />
+      <div style={{ fontFamily:font,background:C.bg,color:C.text,minHeight:"100vh",display:"flex",WebkitFontSmoothing:"antialiased" }}>
+        {/* ━━━ LEFT SIDEBAR ━━━ */}
+        <aside style={{ width:220,background:C.surface,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",flexShrink:0,zIndex:60 }}>
+          {/* Logo */}
+          <div style={{ padding:"20px 22px 16px",cursor:"pointer" }} onClick={()=>{setActiveProjectId(null);setView("home");}}>
+            <img src={NW_LOGO_TAG} alt="Next Wave" style={{ height:38,width:"auto" }} />
+            <div style={{ fontSize:9,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.18em",marginTop:4 }}>Building What's Next</div>
           </div>
-          <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-            {projects.length>0&&(<select style={{...fieldInput,width:"auto",minWidth:200,padding:"7px 12px",fontSize:12,cursor:"pointer"}} value={activeProjectId||""} onChange={e=>{const id=e.target.value;if(id){setActiveProjectId(id);setWsTab("overview");setView("workspace");}else{setActiveProjectId(null);setView("home");}}}>
-              <option value="">Select Project...</option>{projects.map(p=>(<option key={p.id} value={p.id}>{p.project_info.name}</option>))}
-            </select>)}
-            <button style={btnOutline} onClick={()=>{setActiveProjectId(null);setView("home");}}>Home</button>
+          {/* Nav Items */}
+          <nav style={{ flex:1,padding:"8px 12px" }}>
+            {sidebarItems.map(item => {
+              const isActive = sidebarTab === item.id || (item.id === "overview" && view === "workspace" && wsTab === "overview");
+              return (<button key={item.id} onClick={() => {
+                if (item.id === "overview" && activeProject) { setWsTab("overview"); setView("workspace"); }
+                else if (item.id === "dashboard") { setActiveProjectId(null); setView("home"); }
+                else if (item.id === "settings" || item.id === "tasks" || item.id === "reports" || item.id === "documents" || item.id === "templates") { showToast("Coming soon"); }
+              }} style={{
+                display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 14px",borderRadius:10,border:"none",
+                background:isActive ? C.accentSoft : "transparent",color:isActive ? C.accent : C.textMid,
+                fontSize:13,fontWeight:isActive ? 700 : 500,cursor:"pointer",fontFamily:font,marginBottom:2,transition:"all 0.15s",textAlign:"left"
+              }}>
+                <span style={{ fontSize:16 }}>{item.icon}</span>{item.label}
+              </button>);
+            })}
+          </nav>
+          {/* User */}
+          <div style={{ padding:"16px 18px",borderTop:`1px solid ${C.borderLight}`,display:"flex",alignItems:"center",gap:10,cursor:"pointer" }}>
+            <div style={{ width:36,height:36,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:700 }}>DK</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13,fontWeight:600,color:C.text }}>Devan K.</div>
+              <div style={{ fontSize:10,color:C.textMuted }}>Project Manager</div>
+            </div>
+            <span style={{ fontSize:14,color:C.textMuted }}>›</span>
           </div>
-        </header>
-        <main style={{ flex:1,padding:"28px 32px",maxWidth:1200,width:"100%",margin:"0 auto",animation:"fadeUp 0.25s ease" }}>
-          {view==="home"&&renderHome()}
-          {view==="create"&&renderForm(false)}
-          {view==="edit"&&renderForm(true)}
-          {view==="workspace"&&renderWorkspace()}
-          {view==="tool"&&activeTool?.component&&activeProject&&(
-            <activeTool.component project={activeProject} onSave={handleToolSave} onClose={()=>{setActiveTool(null);setView("workspace");}} />
-          )}
-        </main>
+        </aside>
+
+        {/* ━━━ MAIN AREA ━━━ */}
+        <div style={{ flex:1,display:"flex",flexDirection:"column",minWidth:0 }}>
+          {/* Top Bar */}
+          <header style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 28px",background:C.surface,borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,zIndex:50 }}>
+            <div style={{ display:"flex",alignItems:"center",gap:12 }}>
+              {projects.length>0&&(<select style={{...fieldInput,width:"auto",minWidth:180,padding:"8px 14px",fontSize:13,cursor:"pointer",borderRadius:8,fontWeight:600}} value={activeProjectId||""} onChange={e=>{const id=e.target.value;if(id){setActiveProjectId(id);setWsTab("overview");setView("workspace");}else{setActiveProjectId(null);setView("home");}}}>
+                <option value="">Select Project...</option>{projects.map(p=>(<option key={p.id} value={p.id}>{p.project_info.name}</option>))}
+              </select>)}
+            </div>
+            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+              {projects.length>0&&(<select style={{...fieldInput,width:"auto",minWidth:160,padding:"8px 14px",fontSize:13,cursor:"pointer",borderRadius:8,fontWeight:600}} value={activeProjectId||""} onChange={e=>{const id=e.target.value;if(id){setActiveProjectId(id);setWsTab("overview");setView("workspace");}else{setActiveProjectId(null);setView("home");}}}>
+                <option value="">Select Project...</option>{projects.map(p=>(<option key={p.id} value={p.id}>{p.project_info.name}</option>))}
+              </select>)}
+              <button style={{ width:38,height:38,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center" }}>📅</button>
+              <button style={{ width:38,height:38,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",position:"relative" }}>
+                🔔
+                <span style={{ position:"absolute",top:4,right:4,width:16,height:16,borderRadius:"50%",background:C.negative,color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center" }}>3</span>
+              </button>
+            </div>
+          </header>
+
+          {/* Content */}
+          <main style={{ flex:1,padding:"24px 28px",maxWidth:1280,width:"100%",margin:"0 auto",animation:"fadeUp 0.25s ease",overflowY:"auto" }}>
+            {view==="home"&&renderHome()}
+            {view==="create"&&renderForm(false)}
+            {view==="edit"&&renderForm(true)}
+            {view==="workspace"&&renderWorkspace()}
+            {view==="tool"&&activeTool?.component&&activeProject&&(
+              <activeTool.component project={activeProject} onSave={handleToolSave} onClose={()=>{setActiveTool(null);setView("workspace");}} />
+            )}
+          </main>
+        </div>
         {toast&&(<div style={{ position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",background:C.surface,border:`1px solid ${C.accent}`,color:C.accent,padding:"10px 22px",borderRadius:10,fontSize:13,fontWeight:600,boxShadow:"0 4px 16px rgba(0,0,0,0.08)",animation:"toastIn 0.2s ease",zIndex:100 }}>{toast}</div>)}
       </div>
     </>
