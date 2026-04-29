@@ -2172,10 +2172,11 @@ function LoginScreen({ onLogin }) {
 
 export default function NextWavePlatform() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [projects, setProjects] = useState([]);
-  const [activeProjectId, setActiveProjectId] = useState(null);
+  const [projects, setProjects] = useState(INITIAL_SAMPLES);
+  const [activeProjectId, setActiveProjectId] = useState(INITIAL_SAMPLES[0]?.id || null);
   const [view, setView] = useState("home");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [apiSynced, setApiSynced] = useState(false);
   const [activeTool, setActiveTool] = useState(null);
   const [wsTab, setWsTab] = useState("overview");
   const [form, setForm] = useState({});
@@ -2183,24 +2184,24 @@ export default function NextWavePlatform() {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
   const activeProject = projects.find((p) => p.id === activeProjectId) || null;
 
-  // Fetch projects from API on load
+  // Background-sync from API — app loads instantly with sample data first
   const fetchProjects = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/projects`);
       if (res.ok) {
         const data = await res.json();
-        setProjects(data);
-        if (!activeProjectId && data.length > 0) setActiveProjectId(data[0].id);
-      } else {
-        console.error("API error:", res.status);
-        setProjects(INITIAL_SAMPLES); // Fallback to sample data
+        if (data.length > 0) {
+          setProjects(data);
+          setActiveProjectId(prev => {
+            if (!prev || !data.find(p => p.id === prev)) return data[0].id;
+            return prev;
+          });
+          setApiSynced(true);
+          showToast("Synced with database");
+        }
       }
     } catch (err) {
-      console.error("API unreachable, using sample data:", err.message);
-      setProjects(INITIAL_SAMPLES); // Fallback if API is down
-      if (!activeProjectId) setActiveProjectId(INITIAL_SAMPLES[0].id);
-    } finally {
-      setLoading(false);
+      console.log("API offline — using local data");
     }
   }, []);
 
@@ -2838,13 +2839,6 @@ export default function NextWavePlatform() {
           </div>
         </header>
         <main style={{ flex:1,padding:"28px 32px",maxWidth:1200,width:"100%",margin:"0 auto",animation:"fadeUp 0.25s ease" }}>
-          {loading ? (
-            <div style={{ textAlign:"center",padding:"120px 0" }}>
-              <div style={{ fontSize:32,marginBottom:16 }}>⚡</div>
-              <div style={{ fontSize:16,fontWeight:600,color:C.text,marginBottom:4 }}>Loading Next Wave...</div>
-              <div style={{ fontSize:13,color:C.textMuted }}>Connecting to database</div>
-            </div>
-          ) : (<>
           {view==="home"&&renderHome()}
           {view==="create"&&renderForm(false)}
           {view==="edit"&&renderForm(true)}
@@ -2852,7 +2846,6 @@ export default function NextWavePlatform() {
           {view==="tool"&&activeTool?.component&&activeProject&&(
             <activeTool.component project={activeProject} onSave={handleToolSave} onClose={()=>{setActiveTool(null);setView("workspace");}} />
           )}
-          </>)}
         </main>
         {toast&&(<div style={{ position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",background:C.surface,border:`1px solid ${C.accent}`,color:C.accent,padding:"10px 22px",borderRadius:10,fontSize:13,fontWeight:600,boxShadow:"0 4px 16px rgba(0,0,0,0.08)",animation:"toastIn 0.2s ease",zIndex:100 }}>{toast}</div>)}
       </div>
