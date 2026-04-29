@@ -2313,7 +2313,7 @@ export default function NextWavePlatform() {
   const statL = { fontSize:10,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.1em",marginTop:5 };
   const cur = (v) => { const n=parseFloat(v); if(!n&&n!==0) return "\u2014"; return "$"+n.toLocaleString("en-US",{maximumFractionDigits:0}); };
   const curK = (v) => { const a=Math.abs(v); if(a>=1e6) return (v<0?"-":"")+"$"+(a/1e6).toFixed(1)+"M"; if(a>=1e3) return (v<0?"-":"")+"$"+Math.round(a/1e3)+"K"; return cur(v); };
-  const wsTabBtn = (id,label,count) => (<button key={id} onClick={()=>setWsTab(id)} style={{ padding:"9px 18px",fontSize:11,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",background:"transparent",border:"none",borderBottom:wsTab===id?`2px solid ${C.accent}`:"2px solid transparent",color:wsTab===id?C.accent:C.textMuted,fontFamily:font,transition:"all 0.15s" }}>{label}{count!==undefined?` (${count})`:""}</button>);
+  const wsTabBtn = (id,label) => (<button key={id} onClick={()=>setWsTab(id)} style={{ padding:"10px 20px",fontSize:12,fontWeight:wsTab===id?700:500,letterSpacing:"0.04em",cursor:"pointer",background:wsTab===id?C.accentSoft:"transparent",border:"none",borderRadius:8,color:wsTab===id?C.accent:C.textMid,fontFamily:font,transition:"all 0.15s",marginRight:4 }}>{label}</button>);
 
   // ─── FORM ───
   const renderForm = (isEdit) => {
@@ -2431,11 +2431,11 @@ export default function NextWavePlatform() {
 
 
       {/* Workspace Tabs */}
-      <div style={{ display:"flex",borderBottom:`1px solid ${C.border}`,marginBottom:20,gap:4 }}>
+      <div style={{ display:"flex",marginBottom:20,gap:2,background:C.surfaceAlt,padding:4,borderRadius:12,width:"fit-content" }}>
         {wsTabBtn("overview","Overview")}
         {wsTabBtn("financials","Financials")}
-        {wsTabBtn("tools","Tools",TOOL_REGISTRY.filter(t=>t.status==="active").length)}
-        {wsTabBtn("outputs","Outputs",totalOutputs)}
+        {wsTabBtn("tools","Tools")}
+        {wsTabBtn("outputs","Outputs")}
       </div>
 
       {/* ── OVERVIEW TAB ── */}
@@ -2875,17 +2875,73 @@ export default function NextWavePlatform() {
     </div>);
   };
 
+
+  // ─── SETTINGS ───
+  const renderSettings = () => (
+    <div>
+      <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:28 }}>
+        <button style={btnOutline} onClick={()=>setView("home")}>← Back</button>
+        <h2 style={{ fontSize:22,fontWeight:700,margin:0 }}>Settings</h2>
+      </div>
+      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:16 }}>
+        {/* Profile */}
+        <div style={panel}>
+          <h4 style={{ margin:"0 0 16px",fontSize:14,fontWeight:700,color:C.text }}>Profile</h4>
+          <div style={{ display:"flex",alignItems:"center",gap:14,marginBottom:20 }}>
+            <div style={{ width:56,height:56,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:20,fontWeight:700 }}>DK</div>
+            <div>
+              <div style={{ fontSize:16,fontWeight:700,color:C.text }}>Devan K.</div>
+              <div style={{ fontSize:12,color:C.textMuted }}>Project Manager</div>
+              <div style={{ fontSize:11,color:C.textMuted,marginTop:2 }}>devan@ccbllc.com</div>
+            </div>
+          </div>
+          <div style={{ borderTop:`1px solid ${C.borderLight}`,paddingTop:14 }}>
+            <div style={{ fontSize:11,fontWeight:600,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8 }}>Account Actions</div>
+            <button style={{...btnOutline,marginRight:8,fontSize:12}} onClick={()=>showToast("Profile editing coming soon")}>Edit Profile</button>
+            <button style={{...btnOutline,color:C.negative,borderColor:"rgba(196,86,75,0.25)",fontSize:12}} onClick={()=>{setIsAuthenticated(false);showToast("Signed out");}}>Sign Out</button>
+          </div>
+        </div>
+        {/* Platform */}
+        <div style={panel}>
+          <h4 style={{ margin:"0 0 16px",fontSize:14,fontWeight:700,color:C.text }}>Platform</h4>
+          {[
+            { label:"Theme", value:"Light", action:"Coming soon" },
+            { label:"Default View", value:"Dashboard", action:"Coming soon" },
+            { label:"Data Sync", value:apiSynced?"Connected":"Local Only", action:apiSynced?"Synced with Azure":"Using sample data" },
+            { label:"API Endpoint", value:API_URL.replace("https://","").split("/")[0].substring(0,24)+"...", action:null },
+          ].map((s,i) => (
+            <div key={i} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<3?`1px solid ${C.borderLight}`:"none" }}>
+              <div>
+                <div style={{ fontSize:13,fontWeight:500,color:C.text }}>{s.label}</div>
+                {s.action && <div style={{ fontSize:11,color:C.textMuted }}>{s.action}</div>}
+              </div>
+              <span style={{ fontSize:12,fontWeight:600,color:C.accent }}>{s.value}</span>
+            </div>
+          ))}
+        </div>
+        {/* Data Management */}
+        <div style={{...panel,gridColumn:"1/-1"}}>
+          <h4 style={{ margin:"0 0 16px",fontSize:14,fontWeight:700,color:C.text }}>Data Management</h4>
+          <div style={{ display:"flex",gap:12,flexWrap:"wrap" }}>
+            <button style={{...btn(C.accent,"#fff"),fontSize:12}} onClick={()=>{const json=JSON.stringify(projects,null,2);const b=btoa(unescape(encodeURIComponent(json)));const a=document.createElement("a");a.href="data:application/json;base64,"+b;a.download="ccb_projects_backup.json";document.body.appendChild(a);a.click();document.body.removeChild(a);showToast("All projects exported");}}>Export All Projects</button>
+            <button style={{...btnOutline,fontSize:12}} onClick={()=>showToast("Import coming soon")}>Import Projects</button>
+            <button style={{...btnOutline,fontSize:12}} onClick={()=>{fetchProjects();showToast("Refreshing from server...");}}>Sync with Server</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   // ── Sidebar Nav Items ──
   const sidebarItems = [
     { id:"overview", icon:"🏠", label:"Overview" },
     { id:"dashboard", icon:"📊", label:"Dashboard" },
-    { id:"tasks", icon:"✅", label:"Tasks" },
-    { id:"reports", icon:"📋", label:"Reports" },
-    { id:"documents", icon:"📄", label:"Documents" },
-    { id:"templates", icon:"✨", label:"Templates" },
+    { id:"financials", icon:"💰", label:"Financials" },
+    { id:"tools", icon:"🛠️", label:"Tools" },
+    { id:"schedule", icon:"📅", label:"Schedule" },
     { id:"settings", icon:"⚙️", label:"Settings" },
   ];
-  const sidebarTab = view === "workspace" ? wsTab : view === "home" ? "dashboard" : "overview";
+  const sidebarTab = view === "settings" ? "settings" : view === "workspace" ? wsTab : view === "home" ? "dashboard" : "overview";
 
   if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
@@ -2907,7 +2963,7 @@ export default function NextWavePlatform() {
           {/* Logo */}
           <div style={{ padding:"20px 22px 16px",cursor:"pointer" }} onClick={()=>{setActiveProjectId(null);setView("home");}}>
             <img src={NW_LOGO_TAG} alt="Next Wave" style={{ height:38,width:"auto" }} />
-            <div style={{ fontSize:9,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.18em",marginTop:4 }}>Building What's Next</div>
+
           </div>
           {/* Nav Items */}
           <nav style={{ flex:1,padding:"8px 12px" }}>
@@ -2916,7 +2972,11 @@ export default function NextWavePlatform() {
               return (<button key={item.id} onClick={() => {
                 if (item.id === "overview" && activeProject) { setWsTab("overview"); setView("workspace"); }
                 else if (item.id === "dashboard") { setActiveProjectId(null); setView("home"); }
-                else if (item.id === "settings" || item.id === "tasks" || item.id === "reports" || item.id === "documents" || item.id === "templates") { showToast("Coming soon"); }
+                else if (item.id === "financials" && activeProject) { setWsTab("financials"); setView("workspace"); }
+                else if (item.id === "tools" && activeProject) { setWsTab("tools"); setView("workspace"); }
+                else if (item.id === "schedule" && activeProject) { setWsTab("tools"); setView("workspace"); }
+                else if (item.id === "settings") { setView("settings"); }
+                else if (!activeProject && (item.id === "financials" || item.id === "tools" || item.id === "schedule")) { showToast("Select a project first"); }
               }} style={{
                 display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 14px",borderRadius:10,border:"none",
                 background:isActive ? C.accentSoft : "transparent",color:isActive ? C.accent : C.textMid,
@@ -2950,11 +3010,8 @@ export default function NextWavePlatform() {
               {projects.length>0&&(<select style={{...fieldInput,width:"auto",minWidth:160,padding:"8px 14px",fontSize:13,cursor:"pointer",borderRadius:8,fontWeight:600}} value={activeProjectId||""} onChange={e=>{const id=e.target.value;if(id){setActiveProjectId(id);setWsTab("overview");setView("workspace");}else{setActiveProjectId(null);setView("home");}}}>
                 <option value="">Select Project...</option>{projects.map(p=>(<option key={p.id} value={p.id}>{p.project_info.name}</option>))}
               </select>)}
-              <button style={{ width:38,height:38,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center" }}>📅</button>
-              <button style={{ width:38,height:38,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",position:"relative" }}>
-                🔔
-                <span style={{ position:"absolute",top:4,right:4,width:16,height:16,borderRadius:"50%",background:C.negative,color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center" }}>3</span>
-              </button>
+              <button onClick={()=>{if(activeProject){setWsTab("overview");setView("workspace");showToast("Timeline events loaded");}else{showToast("Select a project first");}}} style={{ width:38,height:38,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s" }} title="Project Timeline">📅</button>
+
             </div>
           </header>
 
@@ -2964,6 +3021,7 @@ export default function NextWavePlatform() {
             {view==="create"&&renderForm(false)}
             {view==="edit"&&renderForm(true)}
             {view==="workspace"&&renderWorkspace()}
+            {view==="settings"&&renderSettings()}
             {view==="tool"&&activeTool?.component&&activeProject&&(
               <activeTool.component project={activeProject} onSave={handleToolSave} onClose={()=>{setActiveTool(null);setView("workspace");}} />
             )}
