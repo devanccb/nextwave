@@ -85,18 +85,18 @@ const TOOL_REGISTRY = [
 // Contract: { project, onSave, onClose } → saves to project.tool_outputs.financial_models
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const pct = (v) => `${(v*100).toFixed(2)}%`;
-const mult = (v) => `${v.toFixed(2)}x`;
 function monthLabel(mo) {
-  const names=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const startMonth=1; const startYear=2026;
-  const totalMonths=startMonth+mo-1;
-  const year=startYear+Math.floor(totalMonths/12);
-  return `${names[totalMonths%12]} ${year}`;
+  const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const startMonth = 1; // Feb = index 1
+  const startYear = 2026;
+  const totalMonths = startMonth + mo - 1;
+  const year = startYear + Math.floor(totalMonths / 12);
+  const monthIdx = totalMonths % 12;
+  return `${names[monthIdx]} ${year}`;
 }
 
 // ─── Carousel ───
-function PFCarousel({ children }) {
+function Carousel({ children }) {
   const [idx, setIdx] = useState(0);
   const count = children.length;
   const go = (d) => setIdx((i) => (i + d + count) % count);
@@ -133,7 +133,7 @@ function PFCarousel({ children }) {
   );
 }
 
-function PFStat({ label, value, color, size="lg" }) {
+function Stat({ label, value, color, size="lg" }) {
   const isLg = size === "lg";
   return (<div>
     <div style={{ fontSize:isLg?"36px":"24px",fontWeight:700,color:color||C.text,letterSpacing:"-0.03em",lineHeight:1.1,fontVariantNumeric:"tabular-nums" }}>{value}</div>
@@ -141,7 +141,7 @@ function PFStat({ label, value, color, size="lg" }) {
   </div>);
 }
 
-function PFCostRow({ label, value, pctVal, barColor }) {
+function CostRow({ label, value, pctVal, barColor }) {
   return (<div style={{ display:"flex",alignItems:"center",gap:"16px",padding:"10px 0",borderBottom:`1px solid ${C.borderLight}` }}>
     <div style={{ flex:1,fontSize:"15px",color:C.textMid,fontWeight:500 }}>{label}</div>
     <div style={{ width:"120px" }}><div style={{ height:"6px",borderRadius:"3px",background:C.surfaceAlt,overflow:"hidden" }}>
@@ -152,9 +152,10 @@ function PFCostRow({ label, value, pctVal, barColor }) {
 }
 
 // ─── Input Box Component ───
-function PFInputBox({ label, value, type="currency", onChange, helper }) {
+function InputBox({ label, value, type="currency", onChange, helper }) {
   const [focused, setFocused] = useState(false);
   const [raw, setRaw] = useState("");
+
   const display = () => {
     if (type === "currency") return value ? `$${Number(value).toLocaleString("en-US")}` : "$0";
     if (type === "percent") return `${(value * 100).toFixed(2)}%`;
@@ -164,47 +165,75 @@ function PFInputBox({ label, value, type="currency", onChange, helper }) {
     if (type === "date") return String(value);
     return `${value}`;
   };
+
   const parse = (str) => {
-    if (type === "date") return str;
+    if (type === "date") return str; // date parsing handled by caller
     const cleaned = str.replace(/[^0-9.\-]/g, "");
     const n = parseFloat(cleaned);
     if (isNaN(n)) return value;
     if (type === "percent") return n / 100;
     return n;
   };
+
   const startEdit = () => {
     setFocused(true);
     if (type === "percent") setRaw((value * 100).toString());
     else if (type === "date") setRaw(String(value));
     else setRaw(value.toString());
   };
-  const commit = () => { setFocused(false); onChange(parse(raw)); };
+
+  const commit = () => {
+    setFocused(false);
+    onChange(parse(raw));
+  };
+
   return (
     <div style={{ marginBottom: "16px" }}>
-      <label style={{ display: "block", fontSize: "12px", color: C.textMid, fontWeight: 500, marginBottom: "5px", letterSpacing: "0.01em" }}>{label}</label>
+      <label style={{ display: "block", fontSize: "12px", color: C.textMid, fontWeight: 500, marginBottom: "5px", letterSpacing: "0.01em" }}>
+        {label}
+      </label>
       {focused ? (
         <input autoFocus value={raw} onChange={e => setRaw(e.target.value)}
           onBlur={commit} onKeyDown={e => e.key === "Enter" && commit()}
-          style={{ width: "100%", padding: "9px 12px", fontSize: "14px", fontWeight: 600, border: `1.5px solid ${C.accent}`, borderRadius: "8px", outline: "none", fontFamily: font, color: C.text, background: "#fff", fontVariantNumeric: "tabular-nums" }} />
+          style={{
+            width: "100%", padding: "9px 12px", fontSize: "14px", fontWeight: 600,
+            border: `1.5px solid ${C.accent}`, borderRadius: "8px", outline: "none",
+            fontFamily: font, color: C.text, background: "#fff",
+            fontVariantNumeric: "tabular-nums",
+          }} />
       ) : (
-        <div onClick={startEdit} style={{ width: "100%", padding: "9px 12px", fontSize: "14px", fontWeight: 600, border: `1px solid ${C.border}`, borderRadius: "8px", cursor: "text", fontFamily: font, color: C.text, background: C.surface, fontVariantNumeric: "tabular-nums", transition: "border-color 0.15s" }}
+        <div onClick={startEdit} style={{
+          width: "100%", padding: "9px 12px", fontSize: "14px", fontWeight: 600,
+          border: `1px solid ${C.border}`, borderRadius: "8px", cursor: "text",
+          fontFamily: font, color: C.text, background: C.surface,
+          fontVariantNumeric: "tabular-nums", transition: "border-color 0.15s",
+        }}
           onMouseOver={e => e.currentTarget.style.borderColor = C.textMuted}
           onMouseOut={e => e.currentTarget.style.borderColor = C.border}
-        >{display()}</div>
+        >
+          {display()}
+        </div>
       )}
-      {helper && <div style={{ fontSize: "11px", color: C.textMuted, marginTop: "4px", fontStyle: "italic" }}>{helper}</div>}
+      {helper && (
+        <div style={{ fontSize: "11px", color: C.textMuted, marginTop: "4px", fontStyle: "italic" }}>{helper}</div>
+      )}
     </div>
   );
 }
 
-function PFSectionHeader({ children }) {
+function SectionHeader({ children }) {
   return (
-    <div style={{ fontSize: "11px", fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "14px", marginTop: "8px", paddingBottom: "8px", borderBottom: `1.5px solid ${C.borderLight}` }}>{children}</div>
+    <div style={{
+      fontSize: "11px", fontWeight: 700, color: C.accent, textTransform: "uppercase",
+      letterSpacing: "0.08em", marginBottom: "14px", marginTop: "8px",
+      paddingBottom: "8px", borderBottom: `1.5px solid ${C.borderLight}`,
+    }}>{children}</div>
   );
 }
 
+// ─── AI File Drop ───
 // ─── AI Chat (floating) ───
-function PFAIChat({ assumptions, metrics, scenario }) {
+function AIChat({ assumptions, metrics, scenario }) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -213,7 +242,7 @@ function PFAIChat({ assumptions, metrics, scenario }) {
   const send = useCallback(async () => {
     if (!input.trim()||loading) return;
     const q=input.trim();setInput("");setMsgs(m=>[...m,{r:"u",t:q}]);setLoading(true);
-    const sys=`You are an AI deal analyst for a Pro Forma analysis. Scenario: ${scenario}. Total Capital: ${$f(metrics.totalCapital)}, Purchase XIRR: ${pct(metrics.purchaseXirr)}, Non-Purchase XIRR: ${pct(metrics.nonPurchaseXirr)}, Break-Even: ${$f(metrics.breakEvenPrice)}, Safety: ${pct(metrics.marginOfSafety)}, Net Return: ${$f(metrics.totalReturn)}, RM Return: ${$f(metrics.rmReturn)}. ${assumptions.marketRateUnits+assumptions.affordableUnits} homes, ${assumptions.projectMonths}mo. Be concise (2-3 sentences), use numbers.`;
+    const sys=`You are an AI deal analyst for FaceOff Pro Forma — Mirimar Modular Housing. Scenario: ${scenario}. Total Capital: ${$f(metrics.totalCapital)}, Purchase XIRR: ${pct(metrics.purchaseXirr)}, Non-Purchase XIRR: ${pct(metrics.nonPurchaseXirr)}, Break-Even: ${$f(metrics.breakEvenPrice)}, Safety: ${pct(metrics.marginOfSafety)}, Net Return: ${$f(metrics.totalReturn)}, RM Return: ${$f(metrics.rmReturn)}. ${assumptions.marketRateUnits+assumptions.affordableUnits} homes, ${assumptions.projectMonths}mo. Be concise (2-3 sentences), use numbers.`;
     try {
       const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:800,system:sys,messages:[{role:"user",content:q}]})});
@@ -250,16 +279,23 @@ function PFAIChat({ assumptions, metrics, scenario }) {
   );
 }
 
-// ─── XIRR: Newton-Raphson solver ───
-function xirrDate(year, month, day) { return new Date(year, month - 1, day || 1); }
-function xirrLastDay(year, month) { return new Date(year, month, 0).getDate(); }
+// ─── XIRR: Newton-Raphson solver (matches Excel's XIRR function exactly) ───
+function xirrDate(year, month, day) {
+  return new Date(year, month - 1, day || 1);
+}
+function xirrLastDay(year, month) {
+  return new Date(year, month, 0).getDate();
+}
 function xirrSolve(cashflows) {
+  // cashflows = [{date: Date, amount: number}, ...]
+  // Returns annualized rate using Newton-Raphson, same as Excel XIRR
   if (!cashflows.length) return 0;
   const d0 = cashflows[0].date.getTime();
   const dayFrac = (d) => (d.getTime() - d0) / 86400000 / 365;
   const fracs = cashflows.map(cf => dayFrac(cf.date));
   const amounts = cashflows.map(cf => cf.amount);
-  let rate = 0.1;
+
+  let rate = 0.1; // initial guess
   for (let iter = 0; iter < 200; iter++) {
     let npv = 0, dnpv = 0;
     for (let i = 0; i < amounts.length; i++) {
@@ -277,449 +313,1085 @@ function xirrSolve(cashflows) {
   return rate;
 }
 
-// ─── Calculation engine ───
+// ─── Calculation engine (matches Excel Pro Forma sheet exactly) ───
 function calcScenario(a, resalePrice, affordableResalePrice) {
   const mktU=Math.max(a.marketRateUnits,0), affU=Math.max(a.affordableUnits,0), totalUnits=mktU+affU, months=Math.max(a.projectMonths,1);
   const mktCostPerSF=a.marketCostPerSF||0, affCostPerSF=a.affordableCostPerSF||0;
+
+  // Excel: Purchase & Permitting = Purchase Price + Permitting Costs
   const purchaseCost=(a.purchasePrice||0)+(a.permittingCosts||0);
+
+  // Capital vs proceeds split (Excel B5/B6/B8/B9)
   const capMkt=Math.min(a.capitalMarketUnits||0,mktU);
   const capAff=Math.min(a.capitalAffordableUnits||0,affU);
   const capProd=(capMkt*a.marketSF*mktCostPerSF)+(capAff*a.affordableSF*affCostPerSF);
   const procMkt=mktU-capMkt, procAff=affU-capAff;
   const procProd=(procMkt*a.marketSF*mktCostPerSF)+(procAff*a.affordableSF*affCostPerSF);
+
+  // Site costs (Excel row 6: Site work & permitting related costs)
   const siteMiscCosts=a.siteWork||0;
+
+  // Total capital required (Excel row 7 = Purchase + Capital Production + Site)
   const totalCapital=purchaseCost+capProd+siteMiscCosts;
+
+  // Revenue (Excel rows 9-10, uses per-scenario affordable resale)
   const affResale=affordableResalePrice!=null?affordableResalePrice:(a.affordableResaleMid||0);
   const gross=(mktU*resalePrice)+(affU*affResale);
   const netSales=gross*(1-a.commissionRate);
+
+  // 3-tranche preferred return (Excel rows 1-3)
   const prefPurchase=purchaseCost*a.prefRatePurchase/12*months;
   const prefSite=siteMiscCosts*a.prefRateOther/12*Math.max(months-a.monthSiteWorkCapital,0);
   const prefModular=capProd*a.prefRateOther/12*Math.max(months-a.monthModularCapital,0);
   const totalPref=prefPurchase+prefSite+prefModular;
+
+  // Total Return (Excel row 11 = Net - Capital - Proceeds - All Prefs)
   const totalReturn=netSales-totalCapital-procProd-totalPref;
   const returnPct=totalCapital>0?totalReturn/totalCapital:0;
+
+  // RM return (Excel row 13 = totalReturn × profitShare + all prefs)
   const rmProfit=totalReturn*a.rmProfitShare;
   const lpProfit=totalReturn*(1-a.rmProfitShare);
   const rmReturn=rmProfit+totalPref;
+
+  // ─── TWO-TRANCHE XIRR (Newton-Raphson — same algorithm as Excel's XIRR) ───
+  // Purchase capital: separate deploy & exit dates
   const purchaseXirrReturn=purchaseCost+prefPurchase;
-  const xirrStart=xirrDate(a.xirrStartYear,a.xirrStartMonth,a.xirrStartDay||1);
-  const xirrExit=xirrDate(a.xirrExitYear,a.xirrExitMonth,a.xirrExitDay||xirrLastDay(a.xirrExitYear,a.xirrExitMonth));
-  const purchaseXirr=purchaseCost>0?xirrSolve([{date:xirrStart,amount:-purchaseCost},{date:xirrExit,amount:purchaseXirrReturn}]):0;
+  const purchDeploy=xirrDate(a.purchDeployYear,a.purchDeployMonth,a.purchDeployDay||1);
+  const purchExit=xirrDate(a.purchExitYear,a.purchExitMonth,a.purchExitDay||xirrLastDay(a.purchExitYear,a.purchExitMonth));
+  const purchaseXirr=purchaseCost>0?xirrSolve([
+    {date:purchDeploy,amount:-purchaseCost},
+    {date:purchExit,amount:purchaseXirrReturn},
+  ]):0;
   const purchaseEqMult=purchaseCost>0?prefPurchase/purchaseCost:0;
-  const purchaseHoldMonths=Math.round((xirrExit-xirrStart)/86400000/30.44);
+  const purchaseHoldMonths=Math.round((purchExit-purchDeploy)/86400000/30.44);
+
+  // Non-purchase capital: separate deploy & exit dates
   const nonPurchaseCapital=totalCapital-purchaseCost;
-  const nonPurchaseXirrReturn=nonPurchaseCapital+rmReturn+prefSite+prefModular;
-  const npDate=new Date(a.xirrStartYear,a.xirrStartMonth-1+(a.monthSiteWorkCapital||0),a.xirrStartDay||1);
-  const nonPurchaseXirr=nonPurchaseCapital>0?xirrSolve([{date:npDate,amount:-nonPurchaseCapital},{date:xirrExit,amount:nonPurchaseXirrReturn}]):0;
+  const nonPurchaseXirrReturn=nonPurchaseCapital+rmReturn;
+  const npDeploy=xirrDate(a.npDeployYear,a.npDeployMonth,a.npDeployDay||1);
+  const npExit=xirrDate(a.npExitYear,a.npExitMonth,a.npExitDay||xirrLastDay(a.npExitYear,a.npExitMonth));
+  const nonPurchaseXirr=nonPurchaseCapital>0?xirrSolve([
+    {date:npDeploy,amount:-nonPurchaseCapital},
+    {date:npExit,amount:nonPurchaseXirrReturn},
+  ]):0;
   const nonPurchaseEqMult=nonPurchaseCapital>0?(nonPurchaseXirrReturn-nonPurchaseCapital)/nonPurchaseCapital:0;
-  const nonPurchaseHoldMonths=Math.round((xirrExit-npDate)/86400000/30.44);
+  const nonPurchaseHoldMonths=Math.round((npExit-npDeploy)/86400000/30.44);
+
+  // Break-even
   const nc=1-a.commissionRate;
   const be=(mktU>0&&nc>0)?((totalCapital+procProd+totalPref)-(affU*affResale*nc))/(mktU*nc):0;
   const cushion=resalePrice-be, safety=resalePrice>0?cushion/resalePrice:0;
+
+  // Break-even month
   const ss=Math.min(a.monthModularCapital+3,months), sell=Math.max(months-ss+1,1);
   const avgNet=totalUnits>0?netSales/totalUnits:0;
   const allCosts=totalCapital+procProd+totalPref;
   const uBE=avgNet>0?allCosts/avgNet:totalUnits;
   const mSell=totalUnits>0?Math.ceil((uBE/totalUnits)*sell):sell;
   const beMo=Math.min(ss+mSell-1,months);
+
   return {resalePrice,gross,netSales,capProd,procProd,siteMiscCosts,totalCapital,purchaseCost,
     prefPurchase,prefSite,prefModular,totalPref,totalReturn,returnPct,
-    rmProfit,lpProfit,rmReturn,commission:gross*a.commissionRate,
+    rmProfit,lpProfit,rmReturn,
     purchaseXirrReturn,purchaseXirr,purchaseEqMult,purchaseHoldMonths,
     nonPurchaseCapital,nonPurchaseXirrReturn,nonPurchaseHoldMonths,nonPurchaseXirr,nonPurchaseEqMult,
-    be,cushion,safety,beMo,mktCostPerSF,affCostPerSF,capMkt,capAff,totalUnits,salesStartMonth:ss};
+    be,cushion,safety,beMo,mktCostPerSF,affCostPerSF,capMkt,capAff,totalUnits};
 }
 
-// ─── Excel Export ───
-function crc32(data){let crc=0xFFFFFFFF;for(let i=0;i<data.length;i++){crc^=data[i];for(let j=0;j<8;j++)crc=(crc>>>1)^(crc&1?0xEDB88320:0);}return(crc^0xFFFFFFFF)>>>0;}
-function buildZip(files){const te=new TextEncoder();const entries=files.map(f=>({name:te.encode(f.name),data:te.encode(f.content)}));let offset=0;const localHeaders=[],centralHeaders=[],offsets=[];for(const e of entries){offsets.push(offset);const lh=new Uint8Array(30+e.name.length);const dv=new DataView(lh.buffer);dv.setUint32(0,0x04034b50,true);dv.setUint16(4,20,true);dv.setUint16(8,0,true);dv.setUint32(14,crc32(e.data),true);dv.setUint32(18,e.data.length,true);dv.setUint32(22,e.data.length,true);dv.setUint16(26,e.name.length,true);lh.set(e.name,30);localHeaders.push(lh);offset+=lh.length+e.data.length;}const cdStart=offset;for(let i=0;i<entries.length;i++){const e=entries[i];const ch=new Uint8Array(46+e.name.length);const dv=new DataView(ch.buffer);dv.setUint32(0,0x02014b50,true);dv.setUint16(4,20,true);dv.setUint16(6,20,true);dv.setUint16(10,0,true);dv.setUint32(16,crc32(e.data),true);dv.setUint32(20,e.data.length,true);dv.setUint32(24,e.data.length,true);dv.setUint16(28,e.name.length,true);dv.setUint32(42,offsets[i],true);ch.set(e.name,46);centralHeaders.push(ch);offset+=ch.length;}const cdSize=offset-cdStart;const eocd=new Uint8Array(22);const ev=new DataView(eocd.buffer);ev.setUint32(0,0x06054b50,true);ev.setUint16(8,entries.length,true);ev.setUint16(10,entries.length,true);ev.setUint32(12,cdSize,true);ev.setUint32(16,cdStart,true);const parts=[];for(let i=0;i<entries.length;i++){parts.push(localHeaders[i]);parts.push(entries[i].data);}for(const ch of centralHeaders)parts.push(ch);parts.push(eocd);let total=0;for(const p2 of parts)total+=p2.length;const result=new Uint8Array(total);let pos=0;for(const p2 of parts){result.set(p2,pos);pos+=p2.length;}return result;}
-
-function downloadPFExcel(a, projectName) {
+function downloadExcel(a) {
+  // Ensure all fields have safe defaults for export
+  a = { ...DEFAULT_ASSUMPTIONS, ...a };
   const lo=calcScenario(a,a.marketResaleLow,a.affordableResaleLow), mi=calcScenario(a,a.marketResaleMid,a.affordableResaleMid), hi=calcScenario(a,a.marketResaleHigh,a.affordableResaleHigh);
+  const units=a.marketRateUnits+a.affordableUnits;
+  const date=new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
+  const ss=Math.min(a.monthModularCapital+3,a.projectMonths);
+  const p=v=>`${(v*100).toFixed(1)}%`;
   const p2=v=>`${(v*100).toFixed(2)}%`;
-  const escX=v=>String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  const xirrStartDate=`${a.xirrStartMonth}/${a.xirrStartDay||1}/${a.xirrStartYear}`;
-  const xirrExitDate=`${a.xirrExitMonth}/${a.xirrExitDay||new Date(a.xirrExitYear,a.xirrExitMonth,0).getDate()}/${a.xirrExitYear}`;
+  const esc=v=>String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+  // XIRR dates from assumptions (exact day, separate for purchase and non-purchase)
+  const purchDeployDate=`${a.purchDeployMonth}/${a.purchDeployDay||1}/${a.purchDeployYear}`;
+  const purchExitDate=`${a.purchExitMonth}/${a.purchExitDay||new Date(a.purchExitYear,a.purchExitMonth,0).getDate()}/${a.purchExitYear}`;
+  const npDeployDate=`${a.npDeployMonth}/${a.npDeployDay||1}/${a.npDeployYear}`;
+  const npExitDate=`${a.npExitMonth}/${a.npExitDay||new Date(a.npExitYear,a.npExitMonth,0).getDate()}/${a.npExitYear}`;
+
   const styles = `<Styles>
 <Style ss:ID="Default"><Font ss:FontName="Arial" ss:Size="11" ss:Color="#1A1A1A"/></Style>
 <Style ss:ID="h1"><Font ss:FontName="Arial" ss:Size="14" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#2C3345" ss:Pattern="Solid"/></Style>
+<Style ss:ID="h2"><Font ss:FontName="Arial" ss:Size="11" ss:Color="#FFFFFF"/><Interior ss:Color="#2C3345" ss:Pattern="Solid"/></Style>
 <Style ss:ID="hdr"><Font ss:FontName="Arial" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#2C3345" ss:Pattern="Solid"/><Alignment ss:Horizontal="Left"/></Style>
 <Style ss:ID="hdrC"><Font ss:FontName="Arial" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#2C3345" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>
 <Style ss:ID="d"><Font ss:FontName="Arial" ss:Size="10" ss:Color="#333333"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
 <Style ss:ID="dB"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1" ss:Color="#1A1A1A"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
 <Style ss:ID="dBM"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1" ss:Color="#1A1A1A"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2"/></Borders></Style>
 <Style ss:ID="dC"><Font ss:FontName="Arial" ss:Size="10" ss:Color="#333333"/><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="dR"><Font ss:FontName="Arial" ss:Size="10" ss:Color="#333333"/><Alignment ss:Horizontal="Right"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="dRB"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1" ss:Color="#1A1A1A"/><Alignment ss:Horizontal="Right"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
 <Style ss:ID="$"><Font ss:FontName="Arial" ss:Size="10" ss:Color="#333333"/><NumberFormat ss:Format="_($ * #,##0.00_);_($ * (#,##0.00);_($ * &quot;-&quot;_);_(@_)"/><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
 <Style ss:ID="$B"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1" ss:Color="#1A1A1A"/><NumberFormat ss:Format="_($ * #,##0.00_);_($ * (#,##0.00);_($ * &quot;-&quot;_);_(@_)"/><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2"/></Borders></Style>
+<Style ss:ID="$R"><Font ss:FontName="Arial" ss:Size="10" ss:Color="#333333"/><NumberFormat ss:Format="_($ * #,##0.00_);_($ * (#,##0.00);_($ * &quot;-&quot;_);_(@_)"/><Alignment ss:Horizontal="Right"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="$RB"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1" ss:Color="#1A1A1A"/><NumberFormat ss:Format="_($ * #,##0.00_);_($ * (#,##0.00);_($ * &quot;-&quot;_);_(@_)"/><Alignment ss:Horizontal="Right"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="$RBM"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1" ss:Color="#1A1A1A"/><NumberFormat ss:Format="_($ * #,##0.00_);_($ * (#,##0.00);_($ * &quot;-&quot;_);_(@_)"/><Alignment ss:Horizontal="Right"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2"/></Borders></Style>
+<Style ss:ID="pC"><Font ss:FontName="Arial" ss:Size="10" ss:Color="#333333"/><NumberFormat ss:Format="0.00%"/><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="note"><Font ss:FontName="Arial" ss:Size="9" ss:Italic="1" ss:Color="#666666"/><Alignment ss:WrapText="1" ss:Horizontal="Left"/></Style>
 </Styles>`;
-  const c=(v,s)=>`<Cell ss:StyleID="${s}"><Data ss:Type="${typeof v==='number'?'Number':'String'}">${typeof v==='number'?v:escX(v)}</Data></Cell>`;
+
+  const c=(v,s)=>`<Cell ss:StyleID="${s}"><Data ss:Type="${typeof v==='number'?'Number':'String'}">${typeof v==='number'?v:esc(v)}</Data></Cell>`;
   const sp=`<Row ss:Height="15"><Cell/></Row>`;
   const R=(...cells)=>`<Row ss:Height="18">${cells.join("")}</Row>`;
   const R1=(label)=>`<Row ss:Height="32">${c(label,"h1")}</Row>`;
+
+  const capMktDisp = a.capitalMarketUnits || 0;
+  const capAffDisp = a.capitalAffordableUnits || 0;
+
+  // ─── Sheet 1: Pro Forma (matches Excel exactly) ───
   const proFormaSheet = `<Worksheet ss:Name="Pro Forma"><Table ss:DefaultColumnWidth="100">
 <Column ss:Width="350"/><Column ss:Width="160"/><Column ss:Width="160"/><Column ss:Width="160"/>
 ${sp}
-${R(c("","hdr"),c("LOW","hdrC"),c("MIDDLE","hdrC"),c("HIGH","hdrC"))}
-${R(c("PURCHASE & PERMITTING","dB"),c(lo.purchaseCost,"$"),c(mi.purchaseCost,"$"),c(hi.purchaseCost,"$"))}
-${R(c("CAPITAL PRODUCTION","dB"),c(lo.capProd,"$"),c(mi.capProd,"$"),c(hi.capProd,"$"))}
-${R(c("SITE & MISC COSTS","dB"),c(lo.siteMiscCosts,"$"),c(mi.siteMiscCosts,"$"),c(hi.siteMiscCosts,"$"))}
-${R(c("TOTAL CAPITAL REQUIRED","dBM"),c(lo.totalCapital,"$B"),c(mi.totalCapital,"$B"),c(hi.totalCapital,"$B"))}
+${R(c("PURCHASE & PERMITTING RELATED COSTS","dB"),c(lo.purchaseCost,"$"),c(mi.purchaseCost,"$"),c(hi.purchaseCost,"$"))}
+${R(c("PREF ON RM'S CAPITAL for ACQUISITION","dB"),c(lo.prefPurchase,"$"),c(mi.prefPurchase,"$"),c(hi.prefPurchase,"$"))}
+${R(c("PREF ON RM'S CAPITAL for SITE WORK","dB"),c(lo.prefSite,"$"),c(mi.prefSite,"$"),c(hi.prefSite,"$"))}
+${R(c("PREF ON RM'S CAPITAL for MODULAR HOME RELATED COSTS","dB"),c(lo.prefModular,"$"),c(mi.prefModular,"$"),c(hi.prefModular,"$"))}
+${R(c("CAPITAL TO BUY & FINISH THE MARKET RATE HOUSES @$${lo.mktCostPerSF} PER SF & THE AFFORDABLE HOUSES @ $${lo.affCostPerSF} PER SF","dB"),c(lo.capProd,"$"),c(mi.capProd,"$"),c(hi.capProd,"$"))}
+${R(c("All costs related to modular home acquisition funded by sale proceeds","d"),c(lo.procProd,"$"),c(mi.procProd,"$"),c(hi.procProd,"$"))}
+${R(c("SITE & MISC CONSTRUCTION COSTS","dB"),c(lo.siteMiscCosts,"$"),c(mi.siteMiscCosts,"$"),c(hi.siteMiscCosts,"$"))}
+${R(c("TOTAL CAPITAL REQUIRED FOR THE PROJECT","dBM"),c(lo.totalCapital,"$B"),c(mi.totalCapital,"$B"),c(hi.totalCapital,"$B"))}
 ${sp}
-${R(c("GROSS SALES","dB"),c(lo.gross,"$"),c(mi.gross,"$"),c(hi.gross,"$"))}
+${R(c("","hdr"),c("LOW","hdrC"),c("MIDDLE","hdrC"),c("HIGH","hdrC"))}
+${R(c("*GROSS SALES OF THE HOUSES","dB"),c(lo.gross,"$"),c(mi.gross,"$"),c(hi.gross,"$"))}
 ${R(c("NET SALES","dB"),c(lo.netSales,"$"),c(mi.netSales,"$"),c(hi.netSales,"$"))}
 ${R(c("TOTAL RETURN","dBM"),c(lo.totalReturn,"$B"),c(mi.totalReturn,"$B"),c(hi.totalReturn,"$B"))}
-${R(c("Return %","dB"),c(p2(lo.returnPct),"dC"),c(p2(mi.returnPct),"dC"),c(p2(hi.returnPct),"dC"))}
-${R(c("Purchase Capital XIRR","dB"),c(p2(lo.purchaseXirr),"dC"),c(p2(mi.purchaseXirr),"dC"),c(p2(hi.purchaseXirr),"dC"))}
-${R(c("Non-Purchase XIRR","dB"),c(p2(lo.nonPurchaseXirr),"dC"),c(p2(mi.nonPurchaseXirr),"dC"),c(p2(hi.nonPurchaseXirr),"dC"))}
+${R(c("Return Percentage","dB"),c(p2(lo.returnPct),"dC"),c(p2(mi.returnPct),"dC"),c(p2(hi.returnPct),"dC"))}
+${R(c("RM return after investment w/ ${(a.rmProfitShare*100).toFixed(0)}% of the Profit","dB"),c(lo.rmReturn,"$"),c(mi.rmReturn,"$"),c(hi.rmReturn,"$"))}
+${R(c("Annual return % on purchase capital","dB"),c(p2(lo.purchaseXirr),"dC"),c(p2(mi.purchaseXirr),"dC"),c(p2(hi.purchaseXirr),"dC"))}
+${R(c("Annual return % on all other capital","dB"),c(p2(lo.nonPurchaseXirr),"dC"),c(p2(mi.nonPurchaseXirr),"dC"),c(p2(hi.nonPurchaseXirr),"dC"))}
+${R(c("RM overall return %","dBM"),c(p2(lo.totalCapital>0?lo.rmReturn/lo.totalCapital:0),"dC"),c(p2(mi.totalCapital>0?mi.rmReturn/mi.totalCapital:0),"dC"),c(p2(hi.totalCapital>0?hi.rmReturn/hi.totalCapital:0),"dC"))}
 </Table></Worksheet>`;
+
+  // ─── Sheet 2: Assumptions ───
+  const assumptionsSheet = `<Worksheet ss:Name="ASSUMPTIONS"><Table ss:DefaultColumnWidth="100">
+<Column ss:Width="350"/><Column ss:Width="175"/>
+${R1("ASSUMPTIONS")}
+${R(c("Market Home (Low)","d"),c(a.marketResaleLow,"$R"))}
+${R(c("Market Home (Mid)","d"),c(a.marketResaleMid,"$R"))}
+${R(c("Market Home (High)","d"),c(a.marketResaleHigh,"$R"))}
+${R(c("Affordable Home (Low)","d"),c(a.affordableResaleLow||0,"$R"))}
+${R(c("Affordable Home (Mid)","d"),c(a.affordableResaleMid||0,"$R"))}
+${R(c("Affordable Home (High)","d"),c(a.affordableResaleHigh||0,"$R"))}
+${R(c("Market Units","d"),c(a.marketRateUnits,"dR"))}
+${R(c("Affordable Units","d"),c(a.affordableUnits,"dR"))}
+${R(c("Capital Market Units","d"),c(capMktDisp,"dR"))}
+${R(c("Capital Affordable Units","d"),c(capAffDisp,"dR"))}
+${R(c("Market SF/Home","d"),c(a.marketSF,"dR"))}
+${R(c("Affordable SF/Home","d"),c(a.affordableSF,"dR"))}
+${R(c("Market Cost /SF","d"),c(a.marketCostPerSF||0,"dR"))}
+${R(c("Affordable Cost /SF","d"),c(a.affordableCostPerSF||0,"dR"))}
+${R(c("Purchase Price","dB"),c(a.purchasePrice||0,"$RB"))}
+${R(c("Permitting Costs","d"),c(a.permittingCosts||0,"$R"))}
+${R(c("Site Work","d"),c(a.siteWork,"$R"))}
+${R(c("Pref Rate (Purchase)","dB"),c(p(a.prefRatePurchase),"dRB"))}
+${R(c("Pref Rate (Non-Purchase)","dB"),c(p(a.prefRateOther),"dRB"))}
+${R(c("RM Profit Share","dB"),c((a.rmProfitShare*100).toFixed(2)+"%","dRB"))}
+${R(c("Commission","dB"),c(p(a.commissionRate),"dRB"))}
+${R(c("Duration","dB"),c(a.projectMonths+" months","dRB"))}
+${R(c("Site Work Capital Month","d"),c("Month "+a.monthSiteWorkCapital,"dR"))}
+${R(c("Modular Capital Month","d"),c("Month "+a.monthModularCapital,"dR"))}
+${R(c("Sales Begin","d"),c("Month "+ss,"dR"))}
+</Table></Worksheet>`;
+
+  // ─── Sheet 3: XIRR for Purchase Capital ───
+  const purchaseXirrSheet = `<Worksheet ss:Name="XIRR for Purchase Capital"><Table ss:DefaultColumnWidth="100">
+<Column ss:Width="200"/><Column ss:Width="180"/><Column ss:Width="450"/>
+${R(c("Date","hdr"),c("Cash Flow","hdrC"),c("Notes","hdr"))}
+${sp}
+${R(c(purchDeployDate,"dB"),c(-lo.purchaseCost,"$"),c("Purchase & Permitting Capital","note"))}
+${R(c(purchExitDate,"dB"),c(lo.purchaseXirrReturn,"$"),c("This is the purchase capital that was deployed plus the pref related to that capital","note"))}
+${R(c("XIRR (Annualized Return)","dBM"),c(p2(lo.purchaseXirr||0),"dC"),c("This is the annualized return for the purchase capital","note"))}
+${R(c("Equity Multiple","dB"),c((lo.purchaseEqMult||0).toFixed(3),"dC"),c("","d"))}
+</Table></Worksheet>`;
+
+  // ─── Sheet 4: XIRR for Non-Purchase Capital ───
+  function xirrRow(s, label) {
+    return `${R(c(npDeployDate,"dB"),c(-s.nonPurchaseCapital,"$"),c("All capital minus the purchase & permitting capital","note"))}
+${R(c(npExitDate,"dB"),c(s.nonPurchaseXirrReturn,"$"),c("This is a total of all non purchase related capital deployed + ${(a.rmProfitShare*100).toFixed(0)}% of total return plus the pref earned on all the non purchase related capital","note"))}
+${R(c("XIRR (Annualized Return)","dBM"),c(p2(s.nonPurchaseXirr||0),"dC"),c("This is the annualized return for the ${label} sales returns + the pref for all non purchase related capital used","note"))}
+${R(c("Equity Multiple","dB"),c((s.nonPurchaseEqMult||0).toFixed(3),"dC"),c("","d"))}`;
+  }
+
+  const nonPurchaseXirrSheet = `<Worksheet ss:Name="XIRR for non Purchase C"><Table ss:DefaultColumnWidth="100">
+<Column ss:Width="200"/><Column ss:Width="180"/><Column ss:Width="550"/>
+${R(c("Date","hdr"),c("Cash Flow","hdrC"),c("Notes","hdr"))}
+${sp}
+${xirrRow(lo,"low")}
+${sp}
+${xirrRow(mi,"middle")}
+${sp}
+${xirrRow(hi,"high")}
+</Table></Worksheet>`;
+
   const xml = `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-${styles}${proFormaSheet}
+${styles}
+${proFormaSheet}
+${assumptionsSheet}
+${purchaseXirrSheet}
+${nonPurchaseXirrSheet}
 </Workbook>`;
-  const blob=new Blob([xml],{type:"application/vnd.ms-excel"});
-  const url=URL.createObjectURL(blob);const link=document.createElement("a");
-  link.href=url;link.download=`${projectName||"ProForma"}_Analysis.xls`;link.click();URL.revokeObjectURL(url);
+
+  const blob = new Blob([xml], {type:"application/vnd.ms-excel"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `FaceOff_ProForma_${new Date().toISOString().slice(0,10)}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-const PF_DEFAULT_ASSUMPTIONS = {
-  purchasePrice:0,permittingCosts:0,
-  siteWork:0,
-  marketRateUnits:0,affordableUnits:0,
-  capitalMarketUnits:0,capitalAffordableUnits:0,
-  marketSF:0,affordableSF:0,
-  marketCostPerSF:180,affordableCostPerSF:150,
-  monthSiteWorkCapital:12,monthModularCapital:15,
-  prefRatePurchase:0.12,prefRateOther:0.12,
-  projectMonths:48,
-  commissionRate:0.04,rmProfitShare:0.70,
-  marketResaleLow:0,marketResaleMid:0,marketResaleHigh:0,
-  affordableResaleLow:0,affordableResaleMid:0,affordableResaleHigh:0,
-  xirrStartYear:2026,xirrStartMonth:5,xirrStartDay:1,
-  xirrExitYear:2029,xirrExitMonth:4,xirrExitDay:30,
+// ─── Default blank assumptions ───
+// Only true manual inputs from the Excel workbook.
+// Derived values (proceeds units, prefs, returns, XIRR) are auto-calculated.
+const DEFAULT_ASSUMPTIONS = {
+  purchasePrice:0,permittingCosts:0,          // Excel B0, B1
+  siteWork:0,                                  // Excel B10
+  marketRateUnits:0,affordableUnits:0,         // Excel B4, B7
+  capitalMarketUnits:0,capitalAffordableUnits:0, // Excel B5, B8
+  marketSF:0,affordableSF:0,                   // Excel B2, B3
+  marketCostPerSF:180,affordableCostPerSF:150, // Excel: "@180 PER SF" / "@$150 PER SF"
+  monthSiteWorkCapital:12,monthModularCapital:15, // Excel B12, B13
+  prefRatePurchase:0.12,prefRateOther:0.12,    // Excel B14 (two rates per user requirement)
+  projectMonths:48,                            // Excel B11
+  commissionRate:0.04,rmProfitShare:0.70,      // Excel: ×0.96 net factor, 70% profit share
+  marketResaleLow:0,marketResaleMid:0,marketResaleHigh:0,       // Excel B15, B17, B19
+  affordableResaleLow:0,affordableResaleMid:0,affordableResaleHigh:0, // Excel B16, B18, B20
+  // Purchase capital XIRR dates
+  purchDeployYear:2026,purchDeployMonth:5,purchDeployDay:1,
+  purchExitYear:2029,purchExitMonth:4,purchExitDay:30,
+  // Non-purchase capital XIRR dates
+  npDeployYear:2027,npDeployMonth:5,npDeployDay:1,
+  npExitYear:2029,npExitMonth:4,npExitDay:30,
 };
 
-// ─── Main Pro Forma Tool (Plugin Contract) ───
-function ProFormaTool({ project, onSave, onClose }) {
-  const info = project.project_info;
-  const fin = project.financials;
-  const [scenario, setScenario] = useState("Middle");
-  const [chatOpen, setChatOpen] = useState(false);
-  const [inputsOpen, setInputsOpen] = useState(false);
-  const [a, setA] = useState(() => ({
-    ...PF_DEFAULT_ASSUMPTIONS,
-    purchasePrice: fin.land_cost || 0,
-    marketRateUnits: Math.round((info.lot_count || 0) * 0.75),
-    affordableUnits: Math.round((info.lot_count || 0) * 0.25),
-    marketResaleLow: (fin.target_price_per_home || 0) * 0.9,
-    marketResaleMid: fin.target_price_per_home || 0,
-    marketResaleHigh: (fin.target_price_per_home || 0) * 1.1,
-  }));
-  const u = (k, v) => setA(p => ({ ...p, [k]: v }));
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
-  const m = useMemo(() => {
-    const res=scenario==="Low"?a.marketResaleLow:scenario==="Middle"?a.marketResaleMid:a.marketResaleHigh;
-    const affRes=scenario==="Low"?(a.affordableResaleLow||0):scenario==="Middle"?(a.affordableResaleMid||0):(a.affordableResaleHigh||0);
-    const mktU=Math.max(a.marketRateUnits,0), affU=Math.max(a.affordableUnits,0), totalUnits=mktU+affU, months=Math.max(a.projectMonths,1);
-    const mktCostPerSF=a.marketCostPerSF||0, affCostPerSF=a.affordableCostPerSF||0;
-    const purchaseCost=(a.purchasePrice||0)+(a.permittingCosts||0);
-    const capMkt=Math.min(a.capitalMarketUnits||0,mktU), capAff=Math.min(a.capitalAffordableUnits||0,affU);
-    const capitalProductionCost=(capMkt*a.marketSF*mktCostPerSF)+(capAff*a.affordableSF*affCostPerSF);
-    const procMkt=mktU-capMkt, procAff=affU-capAff;
-    const proceedsProductionCost=(procMkt*a.marketSF*mktCostPerSF)+(procAff*a.affordableSF*affCostPerSF);
-    const siteMiscCosts=a.siteWork||0;
-    const totalCapital=purchaseCost+capitalProductionCost+siteMiscCosts;
-    const grossSales=(mktU*res)+(affU*affRes);
-    const commission=grossSales*a.commissionRate;
-    const netSales=grossSales-commission;
-    const prefPurchase=purchaseCost*a.prefRatePurchase/12*months;
-    const prefSite=siteMiscCosts*a.prefRateOther/12*Math.max(months-a.monthSiteWorkCapital,0);
-    const prefModular=capitalProductionCost*a.prefRateOther/12*Math.max(months-a.monthModularCapital,0);
-    const totalPref=prefPurchase+prefSite+prefModular;
-    const totalReturn=netSales-totalCapital-proceedsProductionCost-totalPref;
-    const returnPct=totalCapital>0?totalReturn/totalCapital:0;
-    const rmProfit=totalReturn*a.rmProfitShare;
-    const lpProfit=totalReturn*(1-a.rmProfitShare);
-    const rmReturn=rmProfit+totalPref;
-    const purchaseXirrReturn=purchaseCost+prefPurchase;
-    const xirrStart=xirrDate(a.xirrStartYear,a.xirrStartMonth,a.xirrStartDay||1);
-    const xirrExit=xirrDate(a.xirrExitYear,a.xirrExitMonth,a.xirrExitDay||xirrLastDay(a.xirrExitYear,a.xirrExitMonth));
-    const purchaseXirr=purchaseCost>0?xirrSolve([{date:xirrStart,amount:-purchaseCost},{date:xirrExit,amount:purchaseXirrReturn}]):0;
-    const purchaseHoldMonths=Math.round((xirrExit-xirrStart)/86400000/30.44);
-    const nonPurchaseCapital=totalCapital-purchaseCost;
-    const nonPurchaseXirrReturn=nonPurchaseCapital+rmReturn+prefSite+prefModular;
-    const npDate=new Date(a.xirrStartYear,a.xirrStartMonth-1+(a.monthSiteWorkCapital||0),a.xirrStartDay||1);
-    const nonPurchaseXirr=nonPurchaseCapital>0?xirrSolve([{date:npDate,amount:-nonPurchaseCapital},{date:xirrExit,amount:nonPurchaseXirrReturn}]):0;
-    const nonPurchaseHoldMonths=Math.round((xirrExit-npDate)/86400000/30.44);
-    const netCommRate=1-a.commissionRate;
-    const allCosts=totalCapital+proceedsProductionCost+totalPref;
-    const affRevNet=affU*affRes*netCommRate;
-    const breakEvenPrice=(mktU>0&&netCommRate>0)?(allCosts-affRevNet)/(mktU*netCommRate):0;
-    const cushionAboveBreakEven=res-breakEvenPrice;
-    const marginOfSafety=res>0?cushionAboveBreakEven/res:0;
-    const salesStartMonth=Math.min(a.monthModularCapital+3,months);
-    const sellingMonths=Math.max(months-salesStartMonth+1,1);
-    const avgNetPrice=totalUnits>0?netSales/totalUnits:0;
-    const unitsToBreakEven=avgNetPrice>0?allCosts/avgNetPrice:totalUnits;
-    const monthsToSell=totalUnits>0?Math.ceil((unitsToBreakEven/totalUnits)*sellingMonths):sellingMonths;
-    const breakevenMonth=Math.min(salesStartMonth+monthsToSell-1,months);
-    const sensitivityPer50K=mktU*50000*netCommRate;
-    const drop5pct=grossSales*0.05*netCommRate;
-    return { purchaseCost,capitalProductionCost,proceedsProductionCost,siteMiscCosts,totalCapital,
-      grossSales,commission,netSales,prefPurchase,prefSite,prefModular,totalPref,
-      totalReturn,returnPct,rmProfit,lpProfit,rmReturn,
-      purchaseXirr,purchaseHoldMonths,nonPurchaseXirr,nonPurchaseHoldMonths,nonPurchaseCapital,nonPurchaseXirrReturn,
-      breakEvenPrice,cushionAboveBreakEven,marginOfSafety,salesStartMonth,breakevenMonth,sensitivityPer50K,drop5pct };
-  }, [a, scenario]);
+// ─── Migrate old saved assumptions to current field names ───
+function migrateAssumptions(old) {
+  if (!old) return { ...DEFAULT_ASSUMPTIONS };
+  const a = { ...DEFAULT_ASSUMPTIONS };
 
-  const res=scenario==="Low"?a.marketResaleLow:scenario==="Middle"?a.marketResaleMid:a.marketResaleHigh;
-  const costs=[
-    {label:"Land & Permits",val:m.purchaseCost,color:C.blue},
-    {label:"Capital Production",val:m.capitalProductionCost,color:"#7DA68A"},
-    {label:"Site & Construction",val:m.siteMiscCosts,color:"#6B8EBF"},
-    {label:"Proceeds Production",val:m.proceedsProductionCost,color:"#8DA47D"},
-    {label:"Commission",val:m.commission,color:"#B8A88A"},
-    {label:"Preferred Return",val:m.totalPref,color:C.warn},
+  // Map old purchaseCost → split into purchasePrice (carry full amount, permitting stays 0)
+  if (old.purchaseCost != null && old.purchasePrice == null) {
+    a.purchasePrice = old.purchaseCost;
+    a.permittingCosts = 0;
+  } else {
+    if (old.purchasePrice != null) a.purchasePrice = old.purchasePrice;
+    if (old.permittingCosts != null) a.permittingCosts = old.permittingCosts;
+  }
+
+  // Map old single affordableResale → all three scenarios
+  if (old.affordableResale != null && old.affordableResaleLow == null) {
+    a.affordableResaleLow = old.affordableResale;
+    a.affordableResaleMid = old.affordableResale;
+    a.affordableResaleHigh = old.affordableResale;
+  } else {
+    if (old.affordableResaleLow != null) a.affordableResaleLow = old.affordableResaleLow;
+    if (old.affordableResaleMid != null) a.affordableResaleMid = old.affordableResaleMid;
+    if (old.affordableResaleHigh != null) a.affordableResaleHigh = old.affordableResaleHigh;
+  }
+
+  // Map old split per-SF → single costPerSF
+  if (old.mktAcquisitionPerSF != null && old.marketCostPerSF == null) {
+    a.marketCostPerSF = (old.mktAcquisitionPerSF || 0) + (old.mktFinishPerSF || 0);
+  } else if (old.marketCostPerSF != null) {
+    a.marketCostPerSF = old.marketCostPerSF;
+  }
+  if (old.affAcquisitionPerSF != null && old.affordableCostPerSF == null) {
+    a.affordableCostPerSF = (old.affAcquisitionPerSF || 0) + (old.affFinishPerSF || 0);
+  } else if (old.affordableCostPerSF != null) {
+    a.affordableCostPerSF = old.affordableCostPerSF;
+  }
+
+  // Direct copy of all fields that kept the same name
+  const directFields = [
+    'siteWork','marketRateUnits','affordableUnits','capitalMarketUnits','capitalAffordableUnits',
+    'marketSF','affordableSF','monthSiteWorkCapital','monthModularCapital',
+    'prefRatePurchase','prefRateOther','projectMonths','commissionRate','rmProfitShare',
+    'marketResaleLow','marketResaleMid','marketResaleHigh',
+    'purchDeployYear','purchDeployMonth','purchDeployDay','purchExitYear','purchExitMonth','purchExitDay',
+    'npDeployYear','npDeployMonth','npDeployDay','npExitYear','npExitMonth','npExitDay',
   ];
-  const totalAllCosts=m.totalCapital+m.proceedsProductionCost+m.commission+m.totalPref;
+  for (const k of directFields) {
+    if (old[k] != null) a[k] = old[k];
+  }
 
-  const handleSave = () => {
-    onSave({
-      id: crypto.randomUUID(), created_at: new Date().toISOString(), tool_id: "proforma",
-      label: `${scenario} Scenario — ${info.name}`,
-      data: { scenario, assumptions: { ...a }, computed: {
-        grossSales: m.grossSales, totalReturn: m.totalReturn, returnPct: m.returnPct,
-        breakEvenPrice: m.breakEvenPrice, marginOfSafety: m.marginOfSafety,
-        rmReturn: m.rmReturn, purchaseXirr: m.purchaseXirr, nonPurchaseXirr: m.nonPurchaseXirr,
-        totalCapital: m.totalCapital, netProfit: m.totalReturn,
-        margin: (m.returnPct * 100).toFixed(1),
-      }},
-    });
+  // Migrate old single XIRR dates → new split dates
+  if (old.xirrStartYear != null && old.purchDeployYear == null) {
+    a.purchDeployYear = old.xirrStartYear;
+    a.purchDeployMonth = old.xirrStartMonth || 5;
+    a.purchDeployDay = old.xirrStartDay || 1;
+    // Old NP deploy was derived from start + monthSiteWorkCapital
+    const npD = new Date(old.xirrStartYear, (old.xirrStartMonth||5)-1+(old.monthSiteWorkCapital||12), old.xirrStartDay||1);
+    a.npDeployYear = npD.getFullYear();
+    a.npDeployMonth = npD.getMonth()+1;
+    a.npDeployDay = npD.getDate();
+  }
+  if (old.xirrExitYear != null && old.purchExitYear == null) {
+    a.purchExitYear = old.xirrExitYear;
+    a.purchExitMonth = old.xirrExitMonth || 4;
+    a.purchExitDay = old.xirrExitDay || 30;
+    a.npExitYear = old.xirrExitYear;
+    a.npExitMonth = old.xirrExitMonth || 4;
+    a.npExitDay = old.xirrExitDay || 30;
+  }
+
+  return a;
+}
+
+// ─── Deal Selector Dropdown ───
+function DealSelector({ deals, activeDealId, onSwitch, onNew, onSave, onRename, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const [naming, setNaming] = useState(false);
+  const [nameVal, setNameVal] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const ref = useRef(null);
+  const active = deals.find(d => d.id === activeDealId);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setConfirmDeleteId(null); } };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const startNew = () => { setNaming(true); setNameVal(""); };
+  const commitNew = () => {
+    if (nameVal.trim()) { onNew(nameVal.trim()); }
+    setNaming(false); setOpen(false);
+  };
+  const startRename = () => { setNaming(true); setNameVal(active?.name || ""); };
+  const commitRename = () => {
+    if (nameVal.trim() && active) { onRename(active.id, nameVal.trim()); }
+    setNaming(false);
+  };
+
+  const ago = (d) => {
+    if (!d) return "";
+    const mins = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   return (
-    <div>
-      {/* Tool Header */}
-      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:10 }}>
-        <div style={{ display:"flex",alignItems:"center",gap:14 }}>
-          <button onClick={onClose} style={{ padding:"8px 16px",borderRadius:"8px",border:`1px solid ${C.border}`,background:C.surface,color:C.textMid,fontSize:"13px",fontWeight:600,cursor:"pointer",fontFamily:font }}>← Back</button>
-          <div>
-            <div style={{ fontSize:"18px",fontWeight:700,color:C.text }}>Pro Forma Analyzer</div>
-            <div style={{ fontSize:"12px",color:C.textMuted }}>{info.name} — {info.city}, {info.state}</div>
+    <div ref={ref} style={{ position: "relative" }}>
+      {/* Active deal display */}
+      <div onClick={() => setOpen(!open)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+        <div>
+          <div style={{ fontSize: "14px", fontWeight: 600, color: C.text, display: "flex", alignItems: "center", gap: "6px" }}>
+            {active?.name || "Untitled Deal"}
+            <span style={{ fontSize: "10px", color: C.textMuted, transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-block" }}>▼</span>
+          </div>
+          <div style={{ fontSize: "11px", color: C.textMuted, marginTop: "1px" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: C.positive, display: "inline-block" }} />Active
+            </span>
+            {active?.updatedAt && <>
+              <span style={{ margin: "0 6px", color: C.border }}>|</span>
+              Saved {ago(active.updatedAt)}
+            </>}
           </div>
         </div>
-        <div style={{ display:"flex",gap:8 }}>
-          <button onClick={()=>setInputsOpen(!inputsOpen)} style={{ padding:"10px 20px",borderRadius:"8px",border:"none",background:inputsOpen?C.positive:C.blue,color:"#fff",fontSize:"13px",fontWeight:600,cursor:"pointer",fontFamily:font }}>
-            {inputsOpen?"Close Editor":"Edit Assumptions"}</button>
-          <button onClick={()=>downloadPFExcel(a, info.name)} style={{ padding:"10px 20px",borderRadius:"8px",border:`1px solid ${C.border}`,background:C.surface,color:C.textMid,fontSize:"13px",fontWeight:600,cursor:"pointer",fontFamily:font }}>
-            Export Excel</button>
-          <button onClick={handleSave} style={{ padding:"10px 20px",borderRadius:"8px",border:"none",background:C.accent,color:"#fff",fontSize:"13px",fontWeight:600,cursor:"pointer",fontFamily:font }}>
-            Save to Project</button>
-        </div>
       </div>
 
-      {/* Summary */}
-      <div style={{ fontSize:"17px",color:C.textMid,lineHeight:1.6,marginBottom:24,fontWeight:400 }}>
-        Over <b style={{color:C.text}}>{a.projectMonths} months</b>, this project is projected to generate{" "}
-        <b style={{color:m.totalReturn>0?C.positive:C.negative}}>{$(m.totalReturn)} total return</b>{" "}
-        ({pct(m.returnPct)} ROI). Break-even requires a market home price of{" "}
-        <b style={{color:C.warn}}>{$(m.breakEvenPrice)}</b>
-        <span style={{color:C.textMuted}}> — {pct(m.marginOfSafety)} below the {scenario.toLowerCase()} price of {$(res)}.</span>
-      </div>
-
-      {/* KPI Row */}
-      <div style={{ display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:16,marginBottom:24 }}>
-        {[
-          {label:"Total Return",value:$(m.totalReturn),color:m.totalReturn>0?C.positive:C.negative},
-          {label:"Return on Capital",value:pct(m.returnPct),color:C.text},
-          {label:"Break-Even Price",value:$(m.breakEvenPrice),color:C.warn,sub:"min market home price"},
-          {label:"Safety Margin",value:pct(m.marginOfSafety),color:m.marginOfSafety>0.15?C.positive:C.negative},
-          {label:"Project Duration",value:`${a.projectMonths} mo`,color:C.blue},
-        ].map((k,i)=>(
-          <div key={i} style={{ background:C.surface,borderRadius:"14px",padding:"24px 28px",border:`1px solid ${C.border}` }}>
-            <div style={{ fontSize:"32px",fontWeight:700,color:k.color,letterSpacing:"-0.03em",fontVariantNumeric:"tabular-nums",lineHeight:1 }}>{k.value}</div>
-            <div style={{ fontSize:"12px",color:C.textMuted,marginTop:8,fontWeight:500,textTransform:"uppercase",letterSpacing:"0.04em" }}>{k.label}</div>
-            {k.sub && <div style={{ fontSize:"11px",color:C.textMuted,marginTop:"2px" }}>{k.sub}</div>}
+      {/* Dropdown */}
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 8px)", left: 0, minWidth: "280px",
+          background: C.surface, borderRadius: "12px", border: `1px solid ${C.border}`,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.12)", zIndex: 300, overflow: "hidden",
+          animation: "fadeUp 0.15s ease",
+        }}>
+          {/* Save current */}
+          <div style={{ padding: "10px 16px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", gap: "8px" }}>
+            <button onClick={() => { onSave(); setOpen(false); }} style={{
+              flex: 1, padding: "7px 0", borderRadius: "6px", border: "none",
+              background: C.positive, color: "#fff", fontSize: "12px", fontWeight: 600,
+              cursor: "pointer", fontFamily: font,
+            }}>Save Deal</button>
+            <button onClick={startRename} style={{
+              padding: "7px 12px", borderRadius: "6px", border: `1px solid ${C.border}`,
+              background: "transparent", color: C.textMid, fontSize: "12px", fontWeight: 500,
+              cursor: "pointer", fontFamily: font,
+            }}>Rename</button>
           </div>
-        ))}
-      </div>
 
-      {/* Scenario Selector */}
-      <div style={{ display:"flex",justifyContent:"center",marginBottom:24 }}>
-        <div style={{ background:C.surface,borderRadius:"10px",display:"flex",padding:"3px",border:`1px solid ${C.border}` }}>
-          {["Low","Middle","High"].map(s=>(
-            <button key={s} onClick={()=>setScenario(s)} style={{
-              padding:"10px 28px",borderRadius:"8px",border:"none",
-              background:scenario===s?C.accent:"transparent",color:scenario===s?"#fff":C.textMuted,
-              fontSize:"13px",fontWeight:600,cursor:"pointer",fontFamily:font,transition:"all 0.25s",
-            }}>{s} Scenario</button>
-          ))}
-        </div>
-      </div>
+          {/* Rename input */}
+          {naming && (
+            <div style={{ padding: "10px 16px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", gap: "8px" }}>
+              <input autoFocus value={nameVal} onChange={e => setNameVal(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && (active && nameVal === active.name ? commitRename() : commitNew())}
+                placeholder="Deal name..."
+                style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: "6px", padding: "6px 10px", fontSize: "13px", fontFamily: font, outline: "none", color: C.text }} />
+              <button onClick={active && deals.find(d=>d.name===nameVal) ? commitRename : commitNew} style={{
+                padding: "6px 12px", borderRadius: "6px", border: "none",
+                background: C.accent, color: "#fff", fontSize: "12px", fontWeight: 600,
+                cursor: "pointer", fontFamily: font,
+              }}>{nameVal === active?.name ? "Rename" : "Create"}</button>
+            </div>
+          )}
 
-      {/* Inputs Panel */}
-      {inputsOpen && (
-        <div style={{ background:C.surface,borderRadius:"14px",border:`1px solid ${C.border}`,padding:"28px 32px",marginBottom:24 }}>
-          <div style={{ fontSize:"15px",fontWeight:700,color:C.text,marginBottom:"6px" }}>Assumptions</div>
-          <div style={{ fontSize:"12px",color:C.textMuted,marginBottom:"24px" }}>Click any value to edit. All outputs update automatically.</div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 48px" }}>
-            <div>
-              <PFSectionHeader>Project Costs</PFSectionHeader>
-              <PFInputBox label="Purchase Price" value={a.purchasePrice} type="currency" onChange={v=>u("purchasePrice",v)} />
-              <PFInputBox label="Permitting Costs" value={a.permittingCosts} type="currency" onChange={v=>u("permittingCosts",v)}
-                helper={`Total purchase & permitting: $${((a.purchasePrice||0)+(a.permittingCosts||0)).toLocaleString()}`} />
-              <PFInputBox label="Site Work Costs" value={a.siteWork} type="currency" onChange={v=>u("siteWork",v)} />
-              <PFSectionHeader>Unit Counts</PFSectionHeader>
-              <PFInputBox label="Market Homes" value={a.marketRateUnits} type="integer" onChange={v=>u("marketRateUnits",v)} />
-              <PFInputBox label="Market Homes Needing Capital" value={a.capitalMarketUnits} type="integer" onChange={v=>u("capitalMarketUnits",v)}
-                helper={`${Math.max(a.marketRateUnits - a.capitalMarketUnits, 0)} using proceeds`} />
-              <PFInputBox label="Affordable Homes" value={a.affordableUnits} type="integer" onChange={v=>u("affordableUnits",v)} />
-              <PFInputBox label="Affordable Homes Needing Capital" value={a.capitalAffordableUnits} type="integer" onChange={v=>u("capitalAffordableUnits",v)}
-                helper={`${Math.max(a.affordableUnits - a.capitalAffordableUnits, 0)} using proceeds`} />
-              <PFSectionHeader>Square Footage & Cost</PFSectionHeader>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px" }}>
-                <PFInputBox label="Market SF / Home" value={a.marketSF} type="sf" onChange={v=>u("marketSF",v)} />
-                <PFInputBox label="Affordable SF / Home" value={a.affordableSF} type="sf" onChange={v=>u("affordableSF",v)} />
-                <PFInputBox label="Market Cost / SF" value={a.marketCostPerSF} type="integer" onChange={v=>u("marketCostPerSF",v)} />
-                <PFInputBox label="Affordable Cost / SF" value={a.affordableCostPerSF} type="integer" onChange={v=>u("affordableCostPerSF",v)} />
+          {/* Deal list */}
+          <div style={{ maxHeight: "280px", overflowY: "auto" }}>
+            {deals.map(deal => (
+              <div key={deal.id}>
+                {/* Inline delete confirmation */}
+                {confirmDeleteId === deal.id && (
+                  <div style={{
+                    padding: "8px 16px", background: C.negativeSoft,
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                  }}>
+                    <span style={{ fontSize: "12px", color: C.negative, fontWeight: 600 }}>Delete "{deal.name}"?</span>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <button onClick={() => setConfirmDeleteId(null)} style={{
+                        padding: "4px 10px", borderRadius: "5px", border: `1px solid ${C.border}`,
+                        background: C.surface, color: C.textMid, fontSize: "11px", fontWeight: 600,
+                        cursor: "pointer", fontFamily: font,
+                      }}>Cancel</button>
+                      <button onClick={() => { onDelete(deal.id); setConfirmDeleteId(null); }} style={{
+                        padding: "4px 10px", borderRadius: "5px", border: "none",
+                        background: C.negative, color: "#fff", fontSize: "11px", fontWeight: 600,
+                        cursor: "pointer", fontFamily: font,
+                      }}>Delete</button>
+                    </div>
+                  </div>
+                )}
+                <div
+                  style={{
+                    padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center",
+                    background: deal.id === activeDealId ? C.accentSoft : "transparent",
+                    borderLeft: deal.id === activeDealId ? `3px solid ${C.accent}` : "3px solid transparent",
+                    transition: "background 0.15s",
+                  }}
+                  onMouseOver={e => { if (deal.id !== activeDealId) e.currentTarget.style.background = C.surfaceAlt; }}
+                  onMouseOut={e => { if (deal.id !== activeDealId) e.currentTarget.style.background = deal.id === activeDealId ? C.accentSoft : "transparent"; }}
+                >
+                  <div onClick={() => { onSwitch(deal.id); setOpen(false); setConfirmDeleteId(null); }} style={{ flex: 1, cursor: "pointer" }}>
+                    <div style={{ fontSize: "13px", fontWeight: deal.id === activeDealId ? 600 : 500, color: C.text }}>{deal.name}</div>
+                    <div style={{ fontSize: "10px", color: C.textMuted, marginTop: "2px" }}>{ago(deal.updatedAt)}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    {deal.id === activeDealId && (
+                      <span style={{ fontSize: "10px", fontWeight: 600, color: C.accent, textTransform: "uppercase", letterSpacing: "0.04em" }}>Active</span>
+                    )}
+                    <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(confirmDeleteId === deal.id ? null : deal.id); }}
+                      style={{ border: "none", background: "transparent", color: C.textMuted, fontSize: "14px", cursor: "pointer", padding: "2px 4px", borderRadius: "4px", lineHeight: 1, transition: "color 0.15s" }}
+                      onMouseOver={e => e.currentTarget.style.color = C.negative}
+                      onMouseOut={e => e.currentTarget.style.color = C.textMuted}
+                      title="Delete deal"
+                    >×</button>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div>
-              <PFSectionHeader>Sale Prices</PFSectionHeader>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px" }}>
-                <PFInputBox label="Market Resale (Low)" value={a.marketResaleLow} type="currency" onChange={v=>u("marketResaleLow",v)} />
-                <PFInputBox label="Affordable Resale (Low)" value={a.affordableResaleLow} type="currency" onChange={v=>u("affordableResaleLow",v)} />
-                <PFInputBox label="Market Resale (Mid)" value={a.marketResaleMid} type="currency" onChange={v=>u("marketResaleMid",v)} />
-                <PFInputBox label="Affordable Resale (Mid)" value={a.affordableResaleMid} type="currency" onChange={v=>u("affordableResaleMid",v)} />
-                <PFInputBox label="Market Resale (High)" value={a.marketResaleHigh} type="currency" onChange={v=>u("marketResaleHigh",v)} />
-                <PFInputBox label="Affordable Resale (High)" value={a.affordableResaleHigh} type="currency" onChange={v=>u("affordableResaleHigh",v)} />
-              </div>
-              <PFSectionHeader>Timing</PFSectionHeader>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px" }}>
-                <PFInputBox label="Project Duration (Months)" value={a.projectMonths} type="months" onChange={v=>u("projectMonths",v)} />
-                <PFInputBox label="Site Work Capital Month" value={a.monthSiteWorkCapital} type="month" onChange={v=>u("monthSiteWorkCapital",v)} />
-                <PFInputBox label="Modular Capital Month" value={a.monthModularCapital} type="month" onChange={v=>u("monthModularCapital",v)}
-                  helper={`Sales begin Month ${Math.min((a.monthModularCapital||0) + 3, a.projectMonths)}`} />
-              </div>
-              <PFSectionHeader>Terms</PFSectionHeader>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px" }}>
-                <PFInputBox label="Pref Rate (Purchase)" value={a.prefRatePurchase} type="percent" onChange={v=>u("prefRatePurchase",v)} />
-                <PFInputBox label="Pref Rate (Other)" value={a.prefRateOther} type="percent" onChange={v=>u("prefRateOther",v)} />
-                <PFInputBox label="RM Profit Share" value={a.rmProfitShare} type="percent" onChange={v=>u("rmProfitShare",v)} />
-                <PFInputBox label="Commission Rate" value={a.commissionRate} type="percent" onChange={v=>u("commissionRate",v)} />
-              </div>
-              <PFSectionHeader>XIRR Dates</PFSectionHeader>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px" }}>
-                <PFInputBox label="Deploy Date" value={`${a.xirrStartMonth||1}/${a.xirrStartDay||1}/${a.xirrStartYear||2026}`} type="date"
-                  onChange={v=>{const p=String(v).split(/[\/\-]/);if(p.length===3){u("xirrStartMonth",parseInt(p[0])||1);u("xirrStartDay",parseInt(p[1])||1);u("xirrStartYear",parseInt(p[2])||2026);}}}
-                  helper="Purchase capital deploy (M/D/YYYY)" />
-                <PFInputBox label="Exit Date" value={`${a.xirrExitMonth||4}/${a.xirrExitDay||30}/${a.xirrExitYear||2029}`} type="date"
-                  onChange={v=>{const p=String(v).split(/[\/\-]/);if(p.length===3){u("xirrExitMonth",parseInt(p[0])||1);u("xirrExitDay",parseInt(p[1])||1);u("xirrExitYear",parseInt(p[2])||2029);}}}
-                  helper="Return/exit date (M/D/YYYY)" />
-              </div>
-            </div>
+            ))}
+          </div>
+
+          {/* New deal */}
+          <div style={{ padding: "10px 16px", borderTop: `1px solid ${C.borderLight}` }}>
+            <button onClick={startNew} style={{
+              width: "100%", padding: "8px 0", borderRadius: "6px", border: `1px dashed ${C.border}`,
+              background: "transparent", color: C.textMid, fontSize: "12px", fontWeight: 500,
+              cursor: "pointer", fontFamily: font, transition: "all 0.15s",
+            }}
+              onMouseOver={e => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.color = C.accent; }}
+              onMouseOut={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMid; }}
+            >+ New Deal</button>
           </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Carousel Panels */}
-      <PFCarousel>
-        {/* Returns */}
-        <div>
-          <div style={{ fontSize:"15px",fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:24 }}>Returns & Distribution</div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:32 }}>
-            <PFStat label="Total Return" value={$(m.totalReturn)} color={m.totalReturn>0?C.positive:C.negative} />
-            <PFStat label="Return on Capital" value={pct(m.returnPct)} />
-            <PFStat label="Purchase Capital Return" value={pct(m.purchaseXirr)} color={C.blue} />
-            <PFStat label="Other Capital Return" value={pct(m.nonPurchaseXirr)} color={m.nonPurchaseXirr>0.2?C.positive:C.warn} />
+// ─── Main ───
+function ProFormaTool({ project, onSave, onClose }) {
+  // ─── DEAL PERSISTENCE ───
+  // Future: replace window.storage with API/database calls
+  const [deals, setDeals] = useState([]);
+  const [activeDealId, setActiveDealId] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+
+  const [scenario, setScenario] = useState("Middle");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [inputsOpen, setInputsOpen] = useState(false);
+
+  // ─── SAVE TO PROJECT (Platform Integration) ───
+  const handleSaveToProject = useCallback(() => {
+    if (!onSave) return;
+    const lo = calcScenario(a, a.marketResaleLow, a.affordableResaleLow);
+    const mi = calcScenario(a, a.marketResaleMid, a.affordableResaleMid);
+    const hi = calcScenario(a, a.marketResaleHigh, a.affordableResaleHigh);
+    const current = scenario === "Low" ? lo : scenario === "High" ? hi : mi;
+    onSave({
+      tool_id: "proforma",
+      label: `${scenario} Scenario${activeDeal ? " — " + (deals.find(d=>d.id===activeDealId)?.name||"Deal") : ""}`,
+      data: {
+        scenario,
+        assumptions: { ...a },
+        computed: {
+          grossProfit: current.totalReturn,
+          totalROI: current.totalROI,
+          xirr: current.purchaseXirr,
+          margin: (current.grossMargin * 100).toFixed(1),
+          netProfit: current.totalReturn,
+          grossSales: current.grossSales,
+          totalCapital: current.totalCapital,
+        },
+        scenarios: { low: lo, middle: mi, high: hi },
+      },
+    });
+  }, [a, scenario, onSave, deals, activeDealId]);
+
+  const [a, setA] = useState({ ...DEFAULT_ASSUMPTIONS });
+
+  // Load deals from storage on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const result = await window.storage.get("faceoff_deals");
+        const saved = result ? JSON.parse(result.value) : null;
+        if (saved?.deals?.length) {
+          // Migrate all saved deals to current field format
+          const migrated = saved.deals.map(d => ({
+            ...d, assumptions: migrateAssumptions(d.assumptions),
+          }));
+          setDeals(migrated);
+          const activeId = saved.activeDealId || migrated[0].id;
+          const activeDeal = migrated.find(d => d.id === activeId) || migrated[0];
+          setActiveDealId(activeDeal.id);
+          setA(migrateAssumptions(activeDeal.assumptions));
+          setScenario(activeDeal.scenario || "Middle");
+        } else {
+          // First launch — create a default deal
+          const firstDeal = { id: genId(), name: "New Deal", assumptions: { ...DEFAULT_ASSUMPTIONS }, scenario: "Middle", updatedAt: new Date().toISOString() };
+          setDeals([firstDeal]);
+          setActiveDealId(firstDeal.id);
+        }
+      } catch {
+        const firstDeal = { id: genId(), name: "New Deal", assumptions: { ...DEFAULT_ASSUMPTIONS }, scenario: "Middle", updatedAt: new Date().toISOString() };
+        setDeals([firstDeal]);
+        setActiveDealId(firstDeal.id);
+      }
+      setLoaded(true);
+    })();
+  }, []);
+
+  // Persist deals to storage whenever they change
+  useEffect(() => {
+    if (!loaded || !deals.length) return;
+    try { window.storage.set("faceoff_deals", JSON.stringify({ deals, activeDealId })); } catch {}
+  }, [deals, activeDealId, loaded]);
+
+  const u = (k, v) => setA(p => ({ ...p, [k]: v }));
+
+  // ─── AUTO-SAVE: persist current assumptions to active deal on every change ───
+  useEffect(() => {
+    if (!loaded || !activeDealId) return;
+    const timer = setTimeout(() => {
+      setDeals(prev => prev.map(d => d.id === activeDealId
+        ? { ...d, assumptions: { ...a }, scenario, updatedAt: new Date().toISOString() }
+        : d
+      ));
+    }, 500); // debounce 500ms
+    return () => clearTimeout(timer);
+  }, [a, scenario, activeDealId, loaded]);
+
+  // ─── DEAL OPERATIONS ───
+  const saveDeal = () => {
+    setDeals(prev => prev.map(d => d.id === activeDealId
+      ? { ...d, assumptions: { ...a }, scenario, updatedAt: new Date().toISOString() }
+      : d
+    ));
+  };
+
+  const switchDeal = (id) => {
+    // Save current deal then switch — use functional update to avoid stale state
+    setDeals(prev => prev.map(d => d.id === activeDealId
+      ? { ...d, assumptions: { ...a }, scenario, updatedAt: new Date().toISOString() }
+      : d
+    ));
+    const deal = deals.find(d => d.id === id);
+    if (deal) {
+      setActiveDealId(id);
+      setA(migrateAssumptions(deal.assumptions));
+      setScenario(deal.scenario || "Middle");
+    }
+  };
+
+  const newDeal = (name) => {
+    // Save current, create new
+    setDeals(prev => [
+      ...prev.map(d => d.id === activeDealId
+        ? { ...d, assumptions: { ...a }, scenario, updatedAt: new Date().toISOString() }
+        : d
+      ),
+      { id: genId(), name, assumptions: { ...DEFAULT_ASSUMPTIONS }, scenario: "Middle", updatedAt: new Date().toISOString() },
+    ]);
+    // Switch to the new deal after state updates
+    setTimeout(() => {
+      setDeals(prev => {
+        const newest = prev[prev.length - 1];
+        setActiveDealId(newest.id);
+        setA({ ...DEFAULT_ASSUMPTIONS });
+        setScenario("Middle");
+        return prev;
+      });
+    }, 0);
+  };
+
+  const renameDeal = (id, name) => {
+    setDeals(prev => prev.map(d => d.id === id ? { ...d, name, updatedAt: new Date().toISOString() } : d));
+  };
+
+  const deleteDeal = (id) => {
+    const remaining = deals.filter(d => d.id !== id);
+    if (remaining.length === 0) {
+      const fallback = { id: genId(), name: "New Deal", assumptions: { ...DEFAULT_ASSUMPTIONS }, scenario: "Middle", updatedAt: new Date().toISOString() };
+      setDeals([fallback]);
+      setActiveDealId(fallback.id);
+      setA({ ...DEFAULT_ASSUMPTIONS });
+      setScenario("Middle");
+    } else {
+      setDeals(remaining);
+      if (id === activeDealId) {
+        const next = remaining[0];
+        setActiveDealId(next.id);
+        setA(migrateAssumptions(next.assumptions));
+        setScenario(next.scenario || "Middle");
+      }
+    }
+  };
+
+  const m = useMemo(() => {
+    const mktU = Math.max(a.marketRateUnits, 0);
+    const affU = Math.max(a.affordableUnits, 0);
+    const totalUnits = mktU + affU;
+    const months = Math.max(a.projectMonths, 1);
+
+    // ─── COST PER SF (Excel: "@180 PER SF" market, "@$150 PER SF" affordable) ───
+    const mktCostPerSF = a.marketCostPerSF || 0;
+    const affCostPerSF = a.affordableCostPerSF || 0;
+
+    // ─── Purchase & Permitting = Purchase Price + Permitting Costs (Excel B0+B1) ───
+    const purchaseCost = (a.purchasePrice || 0) + (a.permittingCosts || 0);
+
+    // ─── CAPITAL vs PROCEEDS SPLIT (Excel B5/B6/B8/B9) ───
+    const capMkt = Math.min(a.capitalMarketUnits || 0, mktU);
+    const capAff = Math.min(a.capitalAffordableUnits || 0, affU);
+    const capitalProductionCost = (capMkt * a.marketSF * mktCostPerSF) + (capAff * a.affordableSF * affCostPerSF);
+    const procMkt = mktU - capMkt;
+    const procAff = affU - capAff;
+    const proceedsProductionCost = (procMkt * a.marketSF * mktCostPerSF) + (procAff * a.affordableSF * affCostPerSF);
+
+    // ─── SITE COSTS (Excel row 6) ───
+    const siteMiscCosts = a.siteWork || 0;
+
+    // ─── TOTAL CAPITAL REQUIRED ───
+    const totalCapital = purchaseCost + capitalProductionCost + siteMiscCosts;
+
+    // ─── REVENUE (per-scenario affordable resale) ───
+    const res = scenario === "Low" ? a.marketResaleLow : scenario === "Middle" ? a.marketResaleMid : a.marketResaleHigh;
+    const affRes = scenario === "Low" ? (a.affordableResaleLow||0) : scenario === "Middle" ? (a.affordableResaleMid||0) : (a.affordableResaleHigh||0);
+    const grossSales = (mktU * res) + (affU * affRes);
+    const commission = grossSales * a.commissionRate;
+    const netSales = grossSales - commission;
+
+    // ─── 3-TRANCHE PREFERRED RETURN (matches true R2, R3, R4) ───
+    const prefPurchase = purchaseCost * a.prefRatePurchase / 12 * months;
+    const prefSite = siteMiscCosts * a.prefRateOther / 12 * Math.max(months - a.monthSiteWorkCapital, 0);
+    const prefModular = capitalProductionCost * a.prefRateOther / 12 * Math.max(months - a.monthModularCapital, 0);
+    const totalPref = prefPurchase + prefSite + prefModular;
+
+    // ─── TOTAL RETURN (matches true R12 = NetSales - Capital - Proceeds - AllPrefs) ───
+    const totalReturn = netSales - totalCapital - proceedsProductionCost - totalPref;
+    const returnPct = totalCapital > 0 ? totalReturn / totalCapital : 0;
+
+    // ─── PROFIT SPLIT (matches true R14) ───
+    // RM gets profit share + all prefs. Capital is NOT added back to RM return.
+    const rmProfit = totalReturn * a.rmProfitShare;
+    const lpProfit = totalReturn * (1 - a.rmProfitShare);
+    const rmReturn = rmProfit + totalPref;
+
+    // ─── TWO-TRANCHE XIRR (Newton-Raphson — same algorithm as Excel's XIRR) ───
+    // Purchase capital: separate deploy & exit dates
+    const purchaseXirrReturn = purchaseCost + prefPurchase;
+    const purchDeploy = xirrDate(a.purchDeployYear, a.purchDeployMonth, a.purchDeployDay || 1);
+    const purchExit = xirrDate(a.purchExitYear, a.purchExitMonth, a.purchExitDay || xirrLastDay(a.purchExitYear, a.purchExitMonth));
+    const purchaseXirr = purchaseCost > 0 ? xirrSolve([
+      { date: purchDeploy, amount: -purchaseCost },
+      { date: purchExit, amount: purchaseXirrReturn },
+    ]) : 0;
+    const purchaseEqMult = purchaseCost > 0 ? prefPurchase / purchaseCost : 0;
+    const purchaseHoldMonths = Math.round((purchExit - purchDeploy) / 86400000 / 30.44);
+
+    // Non-purchase capital: separate deploy & exit dates
+    const nonPurchaseCapital = totalCapital - purchaseCost;
+    const nonPurchaseXirrReturn = nonPurchaseCapital + rmReturn;
+    const npDeploy = xirrDate(a.npDeployYear, a.npDeployMonth, a.npDeployDay || 1);
+    const npExit = xirrDate(a.npExitYear, a.npExitMonth, a.npExitDay || xirrLastDay(a.npExitYear, a.npExitMonth));
+    const nonPurchaseXirr = nonPurchaseCapital > 0 ? xirrSolve([
+      { date: npDeploy, amount: -nonPurchaseCapital },
+      { date: npExit, amount: nonPurchaseXirrReturn },
+    ]) : 0;
+    const nonPurchaseEqMult = nonPurchaseCapital > 0 ? (nonPurchaseXirrReturn - nonPurchaseCapital) / nonPurchaseCapital : 0;
+    const nonPurchaseHoldMonths = Math.round((npExit - npDeploy) / 86400000 / 30.44);
+
+    // ─── BREAK-EVEN PRICE ───
+    // totalReturn ≥ 0: netSales ≥ totalCapital + proceedsCost + totalPref
+    const netCommRate = 1 - a.commissionRate;
+    const allCosts = totalCapital + proceedsProductionCost + totalPref;
+    const affRevNet = affU * affRes * netCommRate;
+    const breakEvenPrice = (mktU > 0 && netCommRate > 0)
+      ? (allCosts - affRevNet) / (mktU * netCommRate) : 0;
+    const cushionAboveBreakEven = res - breakEvenPrice;
+    const marginOfSafety = res > 0 ? cushionAboveBreakEven / res : 0;
+
+    // ─── DYNAMIC TIMELINE ───
+    const salesStartMonth = Math.min(a.monthModularCapital + 3, months);
+    const sellingMonths = Math.max(months - salesStartMonth + 1, 1);
+    const avgNetPrice = totalUnits > 0 ? netSales / totalUnits : 0;
+    const unitsToBreakEven = avgNetPrice > 0 ? allCosts / avgNetPrice : totalUnits;
+    const monthsToSell = totalUnits > 0 ? Math.ceil((unitsToBreakEven / totalUnits) * sellingMonths) : sellingMonths;
+    const breakevenMonth = Math.min(salesStartMonth + monthsToSell - 1, months);
+
+    // ─── SENSITIVITY ───
+    const sensitivityPer50K = mktU * 50000 * netCommRate;
+    const drop5pct = grossSales * 0.05 * netCommRate;
+
+    return {
+      purchaseCost, mktCostPerSF, affCostPerSF,
+      capitalProductionCost, proceedsProductionCost, siteMiscCosts, totalCapital,
+      grossSales, commission, netSales,
+      prefPurchase, prefSite, prefModular, totalPref,
+      totalReturn, returnPct,
+      rmProfit, lpProfit, rmReturn,
+      purchaseXirrReturn, purchaseXirr, purchaseEqMult, purchaseHoldMonths,
+      nonPurchaseCapital, nonPurchaseXirrReturn, nonPurchaseHoldMonths, nonPurchaseXirr, nonPurchaseEqMult,
+      breakEvenPrice, cushionAboveBreakEven, marginOfSafety,
+      salesStartMonth, breakevenMonth, sensitivityPer50K, drop5pct,
+    };
+  }, [a, scenario]);
+
+  const units=a.marketRateUnits+a.affordableUnits;
+  const res=scenario==="Low"?a.marketResaleLow:scenario==="Middle"?a.marketResaleMid:a.marketResaleHigh;
+  const costs=[
+    {label:"Land & Permits",val:m.purchaseCost,color:C.accent},
+    {label:"Capital Production (homes needing capital)",val:m.capitalProductionCost,color:"#7DA68A"},
+    {label:"Site & Construction",val:m.siteMiscCosts,color:"#6B8EBF"},
+    {label:"Proceeds Production (funded by sales)",val:m.proceedsProductionCost,color:"#8DA47D"},
+    {label:"Commission",val:m.commission,color:"#B8A88A"},
+    {label:"Preferred Return",val:m.totalPref,color:"#C4943A"},
+  ];
+  const totalAllCosts = m.totalCapital + m.proceedsProductionCost + m.commission + m.totalPref;
+
+  return (
+    <div style={{ fontFamily:font,background:C.bg,minHeight:"100vh",color:C.text,WebkitFontSmoothing:"antialiased" }}>
+      <style>{`
+        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        *{box-sizing:border-box}
+        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:3px}
+        input[type="range"]{display:none}
+      `}</style>
+
+      {/* Header */}
+      <header style={{ borderBottom:`1px solid ${C.border}`,background:C.surface,padding:"16px 32px" }}>
+        <div style={{ maxWidth:"1200px",margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:"16px" }}>
+            <div style={{ fontSize:"18px",fontWeight:700,letterSpacing:"-0.03em",color:C.accent }}>FaceOff</div>
+            <div style={{ width:"1px",height:"20px",background:C.border }} />
+            <DealSelector
+              deals={deals}
+              activeDealId={activeDealId}
+              onSwitch={switchDeal}
+              onNew={newDeal}
+              onSave={saveDeal}
+              onRename={renameDeal}
+              onDelete={deleteDeal}
+            />
           </div>
-          <div style={{ marginTop:28,padding:"20px 24px",background:C.surfaceAlt,borderRadius:12 }}>
-            <div style={{ fontSize:"13px",fontWeight:600,color:C.textMid,marginBottom:14,textTransform:"uppercase",letterSpacing:"0.04em" }}>Return Waterfall</div>
-            {[
-              {label:"Gross Sales",value:m.grossSales,color:C.positive},
-              {label:`Less Commission (${pct(a.commissionRate)})`,value:-m.commission,color:C.textMuted},
-              {label:"Net Sales",value:m.netSales,color:C.text,bold:true},
-              {label:"Less Total Capital Required",value:-m.totalCapital,color:C.textMuted},
-              {label:"Less Proceeds-Funded Production",value:-m.proceedsProductionCost,color:C.textMuted},
-              {label:`Less Pref on Purchase (${pct(a.prefRatePurchase)} × ${a.projectMonths}mo)`,value:-m.prefPurchase,color:C.textMuted},
-              {label:`Less Pref on Site (${pct(a.prefRateOther)} × ${Math.max(a.projectMonths-a.monthSiteWorkCapital,0)}mo)`,value:-m.prefSite,color:C.textMuted},
-              {label:`Less Pref on Modular (${pct(a.prefRateOther)} × ${Math.max(a.projectMonths-a.monthModularCapital,0)}mo)`,value:-m.prefModular,color:C.textMuted},
-              {label:"Total Return",value:m.totalReturn,color:m.totalReturn>0?C.positive:C.negative,bold:true},
-              {label:`RM Profit Share (${pct(a.rmProfitShare)})`,value:m.rmProfit,color:C.accent},
-              {label:"+ All Preferred Returns",value:m.totalPref,color:C.accent},
-              {label:"RM Total Return",value:m.rmReturn,color:C.accent,bold:true},
-              {label:`Annual Return % on Purchase Capital (${m.purchaseHoldMonths}mo)`,value:null,pctValue:pct(m.purchaseXirr),color:C.blue},
-              {label:`Annual Return % on Other Capital (${m.nonPurchaseHoldMonths}mo)`,value:null,pctValue:pct(m.nonPurchaseXirr),color:m.nonPurchaseXirr>0.2?C.positive:C.warn},
-            ].map((row,i)=>(
-              <div key={i} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderTop:row.bold?`1.5px solid ${C.border}`:(i>0?`1px solid ${C.borderLight}`:"none"),marginTop:row.bold?"6px":"0" }}>
-                <span style={{ fontSize:"13px",color:row.bold?C.text:C.textMid,fontWeight:row.bold?700:500 }}>{row.label}</span>
-                <span style={{ fontSize:"14px",fontWeight:row.bold?700:600,color:row.color,fontVariantNumeric:"tabular-nums" }}>
-                  {row.pctValue ? row.pctValue : <>{row.value<0?"−":""}{$f(Math.abs(row.value))}</>}
-                </span>
-              </div>
+          <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
+            <button onClick={()=>setInputsOpen(!inputsOpen)} style={{
+              padding:"10px 20px",borderRadius:"8px",border:"none",
+              background:inputsOpen?C.positive:C.accent,color:"#fff",
+              fontSize:"13px",fontWeight:600,cursor:"pointer",fontFamily:font,transition:"all 0.2s",
+            }}
+              onMouseOver={e=>e.currentTarget.style.opacity="0.9"}
+              onMouseOut={e=>e.currentTarget.style.opacity="1"}
+            >{inputsOpen?"Close Editor":"Edit Assumptions"}</button>
+            <button onClick={()=>{try{downloadExcel(a);}catch(e){alert("Export error: "+e.message);console.error(e);}}} style={{
+              padding:"10px 20px",borderRadius:"8px",border:"none",
+              background:C.accent,color:"#fff",
+              fontSize:"13px",fontWeight:600,cursor:"pointer",fontFamily:font,transition:"all 0.2s",
+            }}
+              onMouseOver={e=>e.currentTarget.style.opacity="0.9"}
+              onMouseOut={e=>e.currentTarget.style.opacity="1"}
+            >Export</button>
+          </div>
+        </div>
+      </header>
+
+      <main style={{ maxWidth:"1200px",margin:"0 auto",padding:"28px 32px 60px" }}>
+
+        {/* Summary */}
+        <div style={{ fontSize:"17px",color:C.textMid,lineHeight:1.6,marginBottom:"28px",fontWeight:400,animation:"fadeUp 0.5s ease both" }}>
+          Over <span style={{ fontWeight:700,color:C.text }}>{a.projectMonths} months</span>, this project is projected to generate{" "}
+          <span style={{ fontWeight:700,color:m.totalReturn>0?C.positive:C.negative }}>{$(m.totalReturn)} total return</span>{" "}
+          ({pct(m.returnPct)} ROI). Break-even requires a market home price of{" "}
+          <span style={{ fontWeight:700,color:C.warn }}>{$(m.breakEvenPrice)}</span>
+          <span style={{ color:C.textMuted }}> — {pct(m.marginOfSafety)} below the {scenario.toLowerCase()} price of {$(res)}.</span>
+        </div>
+
+        {/* KPI Row */}
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:"16px",marginBottom:"24px" }}>
+          {[
+            {label:"Total Return",value:$(m.totalReturn),color:m.totalReturn>0?C.positive:C.negative},
+            {label:"Return on Capital",value:pct(m.returnPct),color:C.text},
+            {label:"Break-Even Price",value:$(m.breakEvenPrice),color:C.warn,sub:"min market home price"},
+            {label:"Safety Margin",value:pct(m.marginOfSafety),color:m.marginOfSafety>0.15?C.positive:C.negative},
+            {label:"Project Duration",value:`${a.projectMonths} mo`,color:C.accent},
+          ].map((k,i)=>(
+            <div key={i} style={{
+              background:C.surface,borderRadius:"14px",padding:"24px 28px",
+              border:`1px solid ${C.border}`,animation:`fadeUp 0.5s ease ${0.1+i*0.08}s both`,
+            }}>
+              <div style={{ fontSize:"32px",fontWeight:700,color:k.color,letterSpacing:"-0.03em",fontVariantNumeric:"tabular-nums",lineHeight:1 }}>{k.value}</div>
+              <div style={{ fontSize:"12px",color:C.textMuted,marginTop:"8px",fontWeight:500,textTransform:"uppercase",letterSpacing:"0.04em" }}>{k.label}</div>
+              {k.sub && <div style={{ fontSize:"11px",color:C.textMuted,marginTop:"2px" }}>{k.sub}</div>}
+            </div>
+          ))}
+        </div>
+
+        {/* Scenario Selector */}
+        <div style={{ display:"flex",justifyContent:"center",marginBottom:"28px" }}>
+          <div style={{ background:C.surface,borderRadius:"10px",display:"flex",padding:"3px",border:`1px solid ${C.border}`,boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+            {["Low","Middle","High"].map(s=>(
+              <button key={s} onClick={()=>setScenario(s)} style={{
+                padding:"10px 28px",borderRadius:"8px",border:"none",
+                background:scenario===s?C.accent:"transparent",
+                color:scenario===s?"#fff":C.textMuted,
+                fontSize:"13px",fontWeight:600,cursor:"pointer",fontFamily:font,transition:"all 0.25s",
+              }}
+                onMouseOver={e=>{if(scenario!==s)e.currentTarget.style.color=C.text;}}
+                onMouseOut={e=>{if(scenario!==s)e.currentTarget.style.color=C.textMuted;}}
+              >{s} Scenario</button>
             ))}
           </div>
         </div>
 
-        {/* Breakeven */}
-        <div>
-          <div style={{ fontSize:"15px",fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:24 }}>Breakeven Analysis</div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:32,marginBottom:32 }}>
-            <PFStat label="Break-Even Home Price" value={$f(m.breakEvenPrice)} color={C.warn} />
-            <PFStat label="Price Cushion" value={$f(m.cushionAboveBreakEven)} color={m.cushionAboveBreakEven>0?C.positive:C.negative} />
-            <PFStat label="Margin of Safety" value={pct(m.marginOfSafety)} color={m.marginOfSafety>0.15?C.positive:C.negative} />
-            <PFStat label="Break-Even Month" value={`Month ${m.breakevenMonth}`} color={C.blue} />
-          </div>
-          <div style={{ fontSize:"14px",color:C.textMid,marginBottom:"10px",fontWeight:500 }}>
-            Project timeline — {a.projectMonths} months total, sales begin Month {m.salesStartMonth}
-          </div>
-          <div style={{ position:"relative",height:36,background:C.surfaceAlt,borderRadius:18,overflow:"hidden" }}>
-            <div style={{ position:"absolute",left:0,top:0,bottom:0,width:`${((m.salesStartMonth-1)/a.projectMonths)*100}%`,background:"rgba(192,86,75,0.15)",borderRadius:"18px 0 0 18px" }} />
-            <div style={{ position:"absolute",left:`${((m.salesStartMonth-1)/a.projectMonths)*100}%`,top:0,bottom:0,width:`${(Math.max(m.breakevenMonth-m.salesStartMonth+1,0)/a.projectMonths)*100}%`,background:"rgba(196,148,58,0.2)" }} />
-            {m.breakevenMonth<a.projectMonths&&<div style={{ position:"absolute",left:`${(m.breakevenMonth/a.projectMonths)*100}%`,top:0,bottom:0,right:0,background:"rgba(91,140,106,0.15)",borderRadius:"0 18px 18px 0" }} />}
-            <div style={{ position:"absolute",left:`${Math.min((m.breakevenMonth/a.projectMonths)*100,100)}%`,top:4,bottom:4,width:3,borderRadius:2,background:C.text,transform:"translateX(-1px)" }} />
-          </div>
-          <div style={{ display:"flex",justifyContent:"space-between",marginTop:8,fontSize:"13px",color:C.textMid }}>
-            <span style={{ fontWeight:500 }}>Capital Deploy (M1–{m.salesStartMonth-1})</span>
-            <span style={{ color:C.warn,fontWeight:700 }}>Break-even: {monthLabel(m.breakevenMonth)}</span>
-            <span style={{ color:C.positive,fontWeight:500 }}>{m.breakevenMonth<a.projectMonths?"Profit Zone":""}</span>
-          </div>
-        </div>
+        {/* Inputs Panel (collapsible) */}
+        {inputsOpen && (
+          <div style={{ background:C.surface,borderRadius:"14px",border:`1px solid ${C.border}`,padding:"28px 32px",marginBottom:"28px",animation:"fadeUp 0.3s ease both" }}>
+            <div style={{ fontSize:"15px",fontWeight:700,color:C.text,marginBottom:"6px" }}>Assumptions</div>
+            <div style={{ fontSize:"12px",color:C.textMuted,marginBottom:"24px" }}>Click any value to edit. All outputs update automatically.</div>
 
-        {/* Cost Stack */}
-        <div>
-          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:20 }}>
-            <div style={{ fontSize:"15px",fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.06em" }}>Cost Stack</div>
-            <div style={{ fontSize:"26px",fontWeight:700,color:C.text,fontVariantNumeric:"tabular-nums" }}>{$f(totalAllCosts)} <span style={{ fontSize:"14px",fontWeight:500,color:C.textMid }}>total all-in costs</span></div>
-          </div>
-          <div style={{ display:"flex",height:12,borderRadius:6,overflow:"hidden",marginBottom:20 }}>
-            {costs.map((c2,i)=>(<div key={i} style={{ width:`${(c2.val/totalAllCosts)*100}%`,background:c2.color,transition:"width 0.6s" }} />))}
-          </div>
-          {costs.map((c2,i)=>(<PFCostRow key={i} label={c2.label} value={c2.val} pctVal={c2.val/totalAllCosts} barColor={c2.color} />))}
-        </div>
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 48px" }}>
 
-        {/* Exit */}
-        <div>
-          <div style={{ fontSize:"15px",fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:24 }}>Exit Snapshot</div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:32,marginBottom:32 }}>
-            <PFStat label="Gross Revenue" value={$(m.grossSales)} />
-            <PFStat label="Net After Commission" value={$(m.grossSales-m.commission)} />
-            <PFStat label="Break-Even Market Price" value={$f(m.breakEvenPrice)} color={C.warn} size="sm" />
-            <PFStat label={`${scenario} Market Price`} value={$f(res)} color={C.positive} size="sm" />
-          </div>
-          <div style={{ padding:"18px 22px",background:C.surfaceAlt,borderRadius:10 }}>
-            <div style={{ fontSize:"14px",color:C.textMid,marginBottom:6,fontWeight:600 }}>Sensitivity</div>
-            <div style={{ fontSize:"15px",color:C.text,lineHeight:1.6 }}>
-              A <b>5% drop</b> in revenue would reduce net proceeds by <b style={{color:C.negative}}>{$(m.drop5pct)}</b>.
-              Each <b>$50K</b> change in market home price shifts profit by <b style={{color:C.blue}}>{$(m.sensitivityPer50K)}</b>.
+              {/* ─── Left Column ─── */}
+              <div>
+                <SectionHeader>Project Costs</SectionHeader>
+                <InputBox label="Purchase Price" value={a.purchasePrice} type="currency" onChange={v=>u("purchasePrice",v)} />
+                <InputBox label="Permitting Costs" value={a.permittingCosts} type="currency" onChange={v=>u("permittingCosts",v)}
+                  helper={`Total purchase & permitting: $${((a.purchasePrice||0)+(a.permittingCosts||0)).toLocaleString()}`} />
+                <InputBox label="Site Work Costs" value={a.siteWork} type="currency" onChange={v=>u("siteWork",v)} />
+
+                <SectionHeader>Unit Counts</SectionHeader>
+                <InputBox label="Market Homes" value={a.marketRateUnits} type="integer" onChange={v=>u("marketRateUnits",v)} />
+                <InputBox label="Market Homes Needing Capital" value={a.capitalMarketUnits} type="integer" onChange={v=>u("capitalMarketUnits",v)}
+                  helper={`${Math.max(a.marketRateUnits - a.capitalMarketUnits, 0)} using proceeds`} />
+                <InputBox label="Affordable Homes" value={a.affordableUnits} type="integer" onChange={v=>u("affordableUnits",v)} />
+                <InputBox label="Affordable Homes Needing Capital" value={a.capitalAffordableUnits} type="integer" onChange={v=>u("capitalAffordableUnits",v)}
+                  helper={`${Math.max(a.affordableUnits - a.capitalAffordableUnits, 0)} using proceeds`} />
+
+                <SectionHeader>Square Footage & Cost</SectionHeader>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px" }}>
+                  <InputBox label="Market SF / Home" value={a.marketSF} type="sf" onChange={v=>u("marketSF",v)} />
+                  <InputBox label="Affordable SF / Home" value={a.affordableSF} type="sf" onChange={v=>u("affordableSF",v)} />
+                  <InputBox label="Market Cost / SF" value={a.marketCostPerSF} type="integer" onChange={v=>u("marketCostPerSF",v)}
+                    helper={`Total: $${((a.capitalMarketUnits||0)*a.marketSF*(a.marketCostPerSF||0)).toLocaleString()} capital production`} />
+                  <InputBox label="Affordable Cost / SF" value={a.affordableCostPerSF} type="integer" onChange={v=>u("affordableCostPerSF",v)}
+                    helper={`Total: $${((a.capitalAffordableUnits||0)*a.affordableSF*(a.affordableCostPerSF||0)).toLocaleString()} capital production`} />
+                </div>
+              </div>
+
+              {/* ─── Right Column ─── */}
+              <div>
+                <SectionHeader>Sale Prices</SectionHeader>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px" }}>
+                  <InputBox label="Market Resale (Low)" value={a.marketResaleLow} type="currency" onChange={v=>u("marketResaleLow",v)} />
+                  <InputBox label="Affordable Resale (Low)" value={a.affordableResaleLow} type="currency" onChange={v=>u("affordableResaleLow",v)} />
+                  <InputBox label="Market Resale (Mid)" value={a.marketResaleMid} type="currency" onChange={v=>u("marketResaleMid",v)} />
+                  <InputBox label="Affordable Resale (Mid)" value={a.affordableResaleMid} type="currency" onChange={v=>u("affordableResaleMid",v)} />
+                  <InputBox label="Market Resale (High)" value={a.marketResaleHigh} type="currency" onChange={v=>u("marketResaleHigh",v)} />
+                  <InputBox label="Affordable Resale (High)" value={a.affordableResaleHigh} type="currency" onChange={v=>u("affordableResaleHigh",v)} />
+                </div>
+
+                <SectionHeader>Timing</SectionHeader>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px" }}>
+                  <InputBox label="Project Duration (Months)" value={a.projectMonths} type="months" onChange={v=>u("projectMonths",v)} />
+                  <InputBox label="Site Work Capital Month" value={a.monthSiteWorkCapital} type="month" onChange={v=>u("monthSiteWorkCapital",v)} />
+                  <InputBox label="Modular Capital Month" value={a.monthModularCapital} type="month" onChange={v=>u("monthModularCapital",v)}
+                    helper={`Sales begin Month ${Math.min((a.monthModularCapital||0) + 3, a.projectMonths)} (modular + 3)`} />
+                </div>
+
+                <SectionHeader>Terms</SectionHeader>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px" }}>
+                  <InputBox label="Pref Rate (Purchase)" value={a.prefRatePurchase} type="percent" onChange={v=>u("prefRatePurchase",v)} />
+                  <InputBox label="Pref Rate (Other)" value={a.prefRateOther} type="percent" onChange={v=>u("prefRateOther",v)} />
+                  <InputBox label="RM Profit Share" value={a.rmProfitShare} type="percent" onChange={v=>u("rmProfitShare",v)} />
+                  <InputBox label="Commission Rate" value={a.commissionRate} type="percent" onChange={v=>u("commissionRate",v)} />
+                </div>
+
+                <SectionHeader>Purchase Capital XIRR Dates</SectionHeader>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px" }}>
+                  <InputBox label="Deploy Date" value={`${a.purchDeployMonth||5}/${a.purchDeployDay||1}/${a.purchDeployYear||2026}`} type="date"
+                    onChange={v=>{const p=String(v).split(/[\/\-]/);if(p.length===3){u("purchDeployMonth",parseInt(p[0])||1);u("purchDeployDay",parseInt(p[1])||1);u("purchDeployYear",parseInt(p[2])||2026);}}} 
+                    helper="M/D/YYYY" />
+                  <InputBox label="Exit Date" value={`${a.purchExitMonth||4}/${a.purchExitDay||30}/${a.purchExitYear||2029}`} type="date"
+                    onChange={v=>{const p=String(v).split(/[\/\-]/);if(p.length===3){u("purchExitMonth",parseInt(p[0])||1);u("purchExitDay",parseInt(p[1])||1);u("purchExitYear",parseInt(p[2])||2029);}}}
+                    helper="M/D/YYYY" />
+                </div>
+
+                <SectionHeader>Non-Purchase Capital XIRR Dates</SectionHeader>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px" }}>
+                  <InputBox label="Deploy Date" value={`${a.npDeployMonth||5}/${a.npDeployDay||1}/${a.npDeployYear||2027}`} type="date"
+                    onChange={v=>{const p=String(v).split(/[\/\-]/);if(p.length===3){u("npDeployMonth",parseInt(p[0])||1);u("npDeployDay",parseInt(p[1])||1);u("npDeployYear",parseInt(p[2])||2027);}}} 
+                    helper="M/D/YYYY" />
+                  <InputBox label="Exit Date" value={`${a.npExitMonth||4}/${a.npExitDay||30}/${a.npExitYear||2029}`} type="date"
+                    onChange={v=>{const p=String(v).split(/[\/\-]/);if(p.length===3){u("npExitMonth",parseInt(p[0])||1);u("npExitDay",parseInt(p[1])||1);u("npExitYear",parseInt(p[2])||2029);}}}
+                    helper="M/D/YYYY" />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </PFCarousel>
+        )}
 
-      {/* Floating AI Chat */}
+        {/* Carousel */}
+        <Carousel>
+          {/* Returns */}
+          <div>
+            <div style={{ fontSize:"15px",fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"24px" }}>Returns & Distribution</div>
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:"32px",alignItems:"start" }}>
+              <Stat label="Total Return" value={$(m.totalReturn)} color={m.totalReturn>0?C.positive:C.negative} />
+              <Stat label="Return Percentage" value={pct(m.returnPct)} />
+              <Stat label="Annual Return on Purchase Capital" value={pct(m.purchaseXirr)} color={C.accent} />
+              <Stat label="Annual Return on All Other Capital" value={pct(m.nonPurchaseXirr)} color={m.nonPurchaseXirr>0.2?C.positive:C.warn} />
+            </div>
+            {/* Waterfall */}
+            <div style={{ marginTop:"28px",padding:"20px 24px",background:C.surfaceAlt,borderRadius:"12px" }}>
+              <div style={{ fontSize:"13px",fontWeight:600,color:C.textMid,marginBottom:"14px",textTransform:"uppercase",letterSpacing:"0.04em" }}>Pro Forma</div>
+              {[
+                {label:"PURCHASE & PERMITTING RELATED COSTS",value:m.purchaseCost,color:C.text},
+                {label:`PREF ON RM'S CAPITAL for ACQUISITION`,value:m.prefPurchase,color:C.textMid},
+                {label:`PREF ON RM'S CAPITAL for SITE WORK`,value:m.prefSite,color:C.textMid},
+                {label:`PREF ON RM'S CAPITAL for MODULAR HOME RELATED COSTS`,value:m.prefModular,color:C.textMid},
+                {label:`CAPITAL TO BUY & FINISH THE MARKET RATE HOUSES @${m.mktCostPerSF} PER SF & THE AFFORDABLE HOUSES @ $${m.affCostPerSF} PER SF`,value:m.capitalProductionCost,color:C.textMid},
+                {label:"All costs related to modular home acquisition funded by sale proceeds",value:m.proceedsProductionCost,color:C.textMid},
+                {label:"SITE & MISC CONSTRUCTION COSTS",value:m.siteMiscCosts,color:C.textMid},
+                {label:"TOTAL CAPITAL REQUIRED",value:m.totalCapital,color:C.text,bold:true},
+                {label:"*GROSS SALES OF THE HOUSES",value:m.grossSales,color:C.positive},
+                {label:"NET SALES",value:m.netSales,color:C.text,bold:true},
+                {label:"TOTAL RETURN",value:m.totalReturn,color:m.totalReturn>0?C.positive:C.negative,bold:true},
+                {label:"Return Percentage",value:null,pctValue:pct(m.returnPct),color:C.text},
+                {label:`RM return after investment w/ ${(a.rmProfitShare*100).toFixed(0)}% of the Profit`,value:m.rmReturn,color:C.accent,bold:true},
+                {label:`Annual return % on purchase capital (${m.purchaseHoldMonths}mo)`,value:null,pctValue:pct(m.purchaseXirr),color:C.accent},
+                {label:`Annual return % on all other capital (${m.nonPurchaseHoldMonths}mo)`,value:null,pctValue:pct(m.nonPurchaseXirr),color:m.nonPurchaseXirr>0.2?C.positive:C.warn},
+                {label:"RM overall return %",value:null,pctValue:pct(m.totalCapital>0?m.rmReturn/m.totalCapital:0),color:C.accent,bold:true,hero:true},
+              ].map((row,i)=>(
+                <div key={i} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:row.hero?"18px 0":"8px 0",borderTop:row.bold?`2px solid ${C.text}`:`1px solid ${C.borderLight}`,marginTop:row.bold?"8px":"0",background:row.hero?"rgba(74,111,165,0.06)":"transparent",borderRadius:row.hero?"10px":"0",paddingLeft:row.hero?"16px":"0",paddingRight:row.hero?"16px":"0",marginLeft:row.hero?"-16px":"0",marginRight:row.hero?"-16px":"0" }}>
+                  <div style={{ flex:1,minWidth:0,paddingRight:"16px" }}>
+                    <span style={{ fontSize:row.hero?"18px":row.bold?"13px":"12px",color:row.hero?C.accent:row.bold?C.text:C.textMid,fontWeight:row.bold?700:500,letterSpacing:row.hero?"-0.02em":"0" }}>{row.label}</span>
+                  </div>
+                  <span style={{ fontSize:row.hero?"32px":"14px",fontWeight:row.hero?800:row.bold?700:600,color:row.color,fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap",letterSpacing:row.hero?"-0.03em":"0" }}>
+                    {row.pctValue ? row.pctValue : row.value!=null ? $f(row.value) : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Breakeven */}
+          <div>
+            <div style={{ fontSize:"15px",fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"24px" }}>Breakeven Analysis</div>
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:"32px",marginBottom:"32px" }}>
+              <Stat label="Break-Even Home Price" value={$f(m.breakEvenPrice)} color={C.warn} />
+              <Stat label="Price Cushion" value={$f(m.cushionAboveBreakEven)} color={m.cushionAboveBreakEven>0?C.positive:C.negative} />
+              <Stat label="Margin of Safety" value={pct(m.marginOfSafety)} color={m.marginOfSafety>0.15?C.positive:C.negative} />
+              <Stat label="Break-Even Month" value={`Month ${m.breakevenMonth}`} color={C.accent} />
+            </div>
+            <div style={{ fontSize:"14px",color:C.textMid,marginBottom:"10px",fontWeight:500 }}>
+              Project timeline — {a.projectMonths} months total, sales begin Month {m.salesStartMonth}
+            </div>
+            <div style={{ position:"relative",height:"36px",background:C.surfaceAlt,borderRadius:"18px",overflow:"hidden" }}>
+              {/* Capital deploy phase: M1 to salesStart-1 */}
+              <div style={{ position:"absolute",left:0,top:0,bottom:0,width:`${Math.min(((m.salesStartMonth-1)/a.projectMonths)*100,100)}%`,background:"rgba(192,86,75,0.15)",borderRadius:"18px 0 0 18px" }} />
+              {/* Sales to breakeven */}
+              <div style={{ position:"absolute",left:`${((m.salesStartMonth-1)/a.projectMonths)*100}%`,top:0,bottom:0,width:`${(Math.max(m.breakevenMonth-m.salesStartMonth+1,0)/a.projectMonths)*100}%`,background:"rgba(196,148,58,0.2)" }} />
+              {/* Profit zone */}
+              {m.breakevenMonth<a.projectMonths && (
+                <div style={{ position:"absolute",left:`${(m.breakevenMonth/a.projectMonths)*100}%`,top:0,bottom:0,right:0,background:"rgba(91,140,106,0.15)",borderRadius:"0 18px 18px 0" }} />
+              )}
+              {/* Breakeven marker */}
+              <div style={{ position:"absolute",left:`${Math.min((m.breakevenMonth/a.projectMonths)*100,100)}%`,top:"4px",bottom:"4px",width:"3px",borderRadius:"2px",background:C.text,transform:"translateX(-1px)" }} />
+            </div>
+            <div style={{ display:"flex",justifyContent:"space-between",marginTop:"8px",fontSize:"13px",color:C.textMid }}>
+              <span style={{ fontWeight:500 }}>Capital Deploy (M1–{m.salesStartMonth-1})</span>
+              <span style={{ color:C.warn,fontWeight:700 }}>Break-even: {monthLabel(m.breakevenMonth)}</span>
+              <span style={{ color:C.positive,fontWeight:500 }}>{m.breakevenMonth<a.projectMonths?"Profit Zone":""}</span>
+            </div>
+          </div>
+
+          {/* Cost Stack */}
+          <div>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:"20px" }}>
+              <div style={{ fontSize:"15px",fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.06em" }}>Cost Stack</div>
+              <div style={{ fontSize:"26px",fontWeight:700,color:C.text,fontVariantNumeric:"tabular-nums" }}>{$f(totalAllCosts)} <span style={{ fontSize:"14px",fontWeight:500,color:C.textMid }}>total all-in costs</span></div>
+            </div>
+            <div style={{ display:"flex",height:"12px",borderRadius:"6px",overflow:"hidden",marginBottom:"20px" }}>
+              {costs.map((c,i)=>(<div key={i} style={{ width:`${(c.val/totalAllCosts)*100}%`,background:c.color,transition:"width 0.6s" }} />))}
+            </div>
+            {costs.map((c,i)=>(<CostRow key={i} label={c.label} value={c.val} pctVal={c.val/totalAllCosts} barColor={c.color} />))}
+          </div>
+
+          {/* Exit Snapshot */}
+          <div>
+            <div style={{ fontSize:"15px",fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"24px" }}>Exit Snapshot</div>
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"32px",marginBottom:"32px" }}>
+              <Stat label="Gross Revenue" value={$(m.grossSales)} />
+              <Stat label="Net After Commission" value={$(m.grossSales - m.commission)} />
+              <Stat label="Break-Even Market Price" value={$f(m.breakEvenPrice)} color={C.warn} size="sm" />
+              <Stat label={`${scenario} Market Price`} value={$f(res)} color={C.positive} size="sm" />
+            </div>
+            <div style={{ padding:"18px 22px",background:C.surfaceAlt,borderRadius:"10px" }}>
+              <div style={{ fontSize:"14px",color:C.textMid,marginBottom:"6px",fontWeight:600 }}>Sensitivity</div>
+              <div style={{ fontSize:"15px",color:C.text,lineHeight:1.6 }}>
+                A <span style={{ fontWeight:700 }}>5% drop</span> in revenue would reduce net proceeds by{" "}
+                <span style={{ fontWeight:700,color:C.negative }}>{$(m.drop5pct)}</span>.
+                Each <span style={{ fontWeight:700 }}>$50K</span> change in market home price shifts profit by{" "}
+                <span style={{ fontWeight:700,color:C.accent }}>{$(m.sensitivityPer50K)}</span>.
+              </div>
+            </div>
+          </div>
+        </Carousel>
+      </main>
+
+      {/* Floating AI */}
       <div style={{ position:"fixed",bottom:"24px",right:"24px",zIndex:200 }}>
         {chatOpen&&(
-          <div style={{ width:"360px",borderRadius:"16px",border:`1px solid ${C.border}`,boxShadow:"0 16px 48px rgba(0,0,0,0.12)",background:C.surface,marginBottom:"12px",overflow:"hidden" }}>
+          <div style={{ width:"360px",borderRadius:"16px",border:`1px solid ${C.border}`,boxShadow:"0 16px 48px rgba(0,0,0,0.12)",background:C.surface,marginBottom:"12px",overflow:"hidden",animation:"fadeUp 0.25s ease" }}>
             <div style={{ padding:"12px 16px",borderBottom:`1px solid ${C.borderLight}`,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
               <div style={{ display:"flex",alignItems:"center",gap:"8px" }}>
                 <div style={{ width:"8px",height:"8px",borderRadius:"50%",background:C.accent }} />
@@ -727,7 +1399,7 @@ function ProFormaTool({ project, onSave, onClose }) {
               </div>
               <button onClick={()=>setChatOpen(false)} style={{ border:"none",background:"transparent",fontSize:"18px",color:C.textMuted,cursor:"pointer",lineHeight:1 }}>×</button>
             </div>
-            <PFAIChat assumptions={a} metrics={m} scenario={scenario} />
+            <AIChat assumptions={a} metrics={m} scenario={scenario} />
           </div>
         )}
         <button onClick={()=>setChatOpen(!chatOpen)} style={{
@@ -735,12 +1407,14 @@ function ProFormaTool({ project, onSave, onClose }) {
           background:chatOpen?C.accent:C.surface,color:chatOpen?"#fff":C.accent,
           fontSize:"18px",cursor:"pointer",boxShadow:"0 2px 12px rgba(0,0,0,0.08)",
           display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s",marginLeft:"auto",fontFamily:font,
-        }}>✦</button>
+        }}
+          onMouseOver={e=>{if(!chatOpen)e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.12)";}}
+          onMouseOut={e=>{if(!chatOpen)e.currentTarget.style.boxShadow="0 2px 12px rgba(0,0,0,0.08)";}}
+        >✦</button>
       </div>
     </div>
   );
 }
-
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // WEBSITE GENERATOR TOOL (Full Plugin)
