@@ -861,10 +861,20 @@ function ProFormaTool({ project, onSave, onClose }) {
   useEffect(() => {
     (async () => {
       try {
-        const result = await window.storage.get("faceoff_deals");
-        const saved = result ? JSON.parse(result.value) : null;
+        let saved = null;
+        // Try window.storage (artifact mode), then localStorage (deployed mode)
+        try {
+          if (window.storage) {
+            const result = await window.storage.get("faceoff_deals");
+            saved = result ? JSON.parse(result.value) : null;
+          }
+        } catch(e) {
+          try {
+            const raw = localStorage.getItem("faceoff_deals");
+            saved = raw ? JSON.parse(raw) : null;
+          } catch(e2) {}
+        }
         if (saved?.deals?.length) {
-          // Migrate all saved deals to current field format
           const migrated = saved.deals.map(d => ({
             ...d, assumptions: migrateAssumptions(d.assumptions),
           }));
@@ -875,7 +885,6 @@ function ProFormaTool({ project, onSave, onClose }) {
           setA(migrateAssumptions(activeDeal.assumptions));
           setScenario(activeDeal.scenario || "Middle");
         } else {
-          // First launch — create a default deal
           const firstDeal = { id: genId(), name: "New Deal", assumptions: { ...DEFAULT_ASSUMPTIONS }, scenario: "Middle", updatedAt: new Date().toISOString() };
           setDeals([firstDeal]);
           setActiveDealId(firstDeal.id);
@@ -892,7 +901,11 @@ function ProFormaTool({ project, onSave, onClose }) {
   // Persist deals to storage whenever they change
   useEffect(() => {
     if (!loaded || !deals.length) return;
-    try { window.storage.set("faceoff_deals", JSON.stringify({ deals, activeDealId })); } catch {}
+    try {
+      const data = JSON.stringify({ deals, activeDealId });
+      if (window.storage) { window.storage.set("faceoff_deals", data); }
+      else { localStorage.setItem("faceoff_deals", data); }
+    } catch {}
   }, [deals, activeDealId, loaded]);
 
   const u = (k, v) => setA(p => ({ ...p, [k]: v }));
