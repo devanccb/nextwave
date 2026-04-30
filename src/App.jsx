@@ -2845,7 +2845,9 @@ function LoginScreen({ onLogin }) {
 
 
 export default function NextWavePlatform() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try { return sessionStorage.getItem("nw_auth") === "true"; } catch(e) { return false; }
+  });
   const [projects, setProjects] = useState(INITIAL_SAMPLES);
   const [activeProjectId, setActiveProjectId] = useState(() => {
     try { return sessionStorage.getItem("nw_projectId") || INITIAL_SAMPLES[0]?.id || null; } catch(e) { return INITIAL_SAMPLES[0]?.id || null; }
@@ -3627,7 +3629,7 @@ export default function NextWavePlatform() {
           <div style={{ borderTop:`1px solid ${C.borderLight}`,paddingTop:14 }}>
             <div style={{ fontSize:11,fontWeight:600,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8 }}>Account Actions</div>
             <button style={{...btnOutline,marginRight:8,fontSize:12}} onClick={()=>showToast("Profile editing coming soon")}>Edit Profile</button>
-            <button style={{...btnOutline,color:C.negative,borderColor:"rgba(196,86,75,0.25)",fontSize:12}} onClick={()=>{setIsAuthenticated(false);showToast("Signed out");}}>Sign Out</button>
+            <button style={{...btnOutline,color:C.negative,borderColor:"rgba(196,86,75,0.25)",fontSize:12}} onClick={()=>{try{sessionStorage.clear();}catch(e){} setIsAuthenticated(false);}}>Sign Out</button>
           </div>
         </div>
         {/* Platform */}
@@ -3680,6 +3682,9 @@ export default function NextWavePlatform() {
   useEffect(() => {
     try { if(activeProjectId) sessionStorage.setItem("nw_projectId", activeProjectId); else sessionStorage.removeItem("nw_projectId"); } catch(e) {}
   }, [activeProjectId]);
+  useEffect(() => {
+    try { sessionStorage.setItem("nw_auth", isAuthenticated ? "true" : "false"); } catch(e) {}
+  }, [isAuthenticated]);
   const sidebarTab = view === "settings" ? "settings" : view === "tool" && activeTool?.id === "scheduler" ? "schedule" : view === "tool" ? "tools" : view === "workspace" ? "dashboard" : view === "home" ? "overview" : "overview";
 
   if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
