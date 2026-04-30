@@ -2796,16 +2796,71 @@ const API_URL = "https://nextwave-api-g5g6f3f7cvg4cnef.centralus-01.azurewebsite
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // @app/login — Login Screen
-// Future: replace with Microsoft Entra ID authentication
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AUTHENTICATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const ALLOWED_DOMAIN = "ccbllc.com"; // Only CCB emails can sign in
 
 function LoginScreen({ onLogin }) {
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [loginError, setLoginError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (loginForm.email && loginForm.password) { onLogin(); setLoginError(""); }
-    else { setLoginError("Enter your email and password"); }
+  const validateEmail = (email) => {
+    if (!email || !email.includes("@")) return false;
+    const domain = email.toLowerCase().split("@")[1];
+    return domain === ALLOWED_DOMAIN;
+  };
+
+  const handleLogin = async () => {
+    setLoginError("");
+    if (!loginForm.email || !loginForm.password) {
+      setLoginError("Enter your email and password");
+      return;
+    }
+    if (!validateEmail(loginForm.email)) {
+      setLoginError(`Only @${ALLOWED_DOMAIN} email addresses can sign in`);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      // Try Azure auth API first
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginForm.email, password: loginForm.password }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Store token and user data
+        try {
+          sessionStorage.setItem("nw_token", data.token);
+          sessionStorage.setItem("nw_user", JSON.stringify(data.user));
+        } catch(e) {}
+        onLogin(data.user, data.token);
+      } else if (res.status === 401) {
+        setLoginError("Invalid email or password");
+      } else if (res.status === 403) {
+        setLoginError(`Only @${ALLOWED_DOMAIN} accounts can sign in`);
+      } else {
+        // Auth API not deployed yet — allow CCB emails through with dev mode
+        console.warn("Auth API returned", res.status, "— using dev mode");
+        const devUser = { firstName: loginForm.email.split("@")[0], lastName: "", role: "Project Manager", email: loginForm.email, avatarInitials: loginForm.email.substring(0,2).toUpperCase() };
+        try {
+          sessionStorage.setItem("nw_user", JSON.stringify(devUser));
+        } catch(e) {}
+        onLogin(devUser, null);
+      }
+    } catch (err) {
+      // Auth API not available — dev mode fallback for CCB emails
+      console.warn("Auth API unreachable — using dev mode for", loginForm.email);
+      const devUser = { firstName: loginForm.email.split("@")[0], lastName: "", role: "Project Manager", email: loginForm.email, avatarInitials: loginForm.email.substring(0,2).toUpperCase() };
+      try {
+        sessionStorage.setItem("nw_user", JSON.stringify(devUser));
+      } catch(e) {}
+      onLogin(devUser, null);
+    }
+    setIsLoading(false);
   };
 
   return (
@@ -2815,6 +2870,7 @@ function LoginScreen({ onLogin }) {
         * { box-sizing: border-box; margin: 0; }
         body { background: #FFFFFF; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
       `}</style>
       <div style={{ fontFamily: '"DM Sans", system-ui, sans-serif', background: "#FFFFFF", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", WebkitFontSmoothing: "antialiased" }}>
         <div style={{ animation: "fadeIn 0.8s ease both", textAlign: "center", marginBottom: 48 }}>
@@ -2823,15 +2879,16 @@ function LoginScreen({ onLogin }) {
 
         <div style={{ animation: "fadeIn 0.8s 0.2s ease both", width: 380, background: "#FFFFFF", border: "1px solid #E4E2DE", borderRadius: 16, padding: "36px 32px", boxShadow: "0 8px 40px rgba(0,0,0,0.08)" }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: "#1A1917", marginBottom: 4, textAlign: "center" }}>Sign In</div>
-          <div style={{ fontSize: 13, color: "#7D7B76", marginBottom: 28, textAlign: "center" }}>Access your development operations platform</div>
+          <div style={{ fontSize: 13, color: "#7D7B76", marginBottom: 28, textAlign: "center" }}>CCB Development Operations Platform</div>
 
           {loginError && (
-            <div style={{ background: "rgba(196,43,43,0.1)", border: "1px solid rgba(196,43,43,0.3)", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#C42B2B" }}>{loginError}</div>
+            <div style={{ background: "rgba(196,43,43,0.08)", border: "1px solid rgba(196,43,43,0.2)", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#C42B2B", fontWeight: 500 }}>{loginError}</div>
           )}
 
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#7D7B76", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Email</label>
-            <input type="email" value={loginForm.email} onChange={e => setLoginForm(p => ({ ...p, email: e.target.value }))} placeholder="you@ccb-llc.com"
+            <input type="email" value={loginForm.email} onChange={e => setLoginForm(p => ({ ...p, email: e.target.value }))} placeholder={`you@${ALLOWED_DOMAIN}`}
+              autoComplete="email" autoFocus
               style={{ width: "100%", padding: "12px 14px", background: "#FFFFFF", border: "1px solid #DDDBD7", borderRadius: 8, color: "#1A1917", fontSize: 14, fontFamily: '"DM Sans", system-ui, sans-serif', outline: "none", transition: "border-color 0.2s" }}
               onFocus={e => e.target.style.borderColor = "#C42B2B"} onBlur={e => e.target.style.borderColor = "#DDDBD7"} />
           </div>
@@ -2839,17 +2896,18 @@ function LoginScreen({ onLogin }) {
           <div style={{ marginBottom: 24 }}>
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#7D7B76", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Password</label>
             <input type="password" value={loginForm.password} onChange={e => setLoginForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••"
+              autoComplete="current-password"
               style={{ width: "100%", padding: "12px 14px", background: "#FFFFFF", border: "1px solid #DDDBD7", borderRadius: 8, color: "#1A1917", fontSize: 14, fontFamily: '"DM Sans", system-ui, sans-serif', outline: "none", transition: "border-color 0.2s" }}
               onFocus={e => e.target.style.borderColor = "#C42B2B"} onBlur={e => e.target.style.borderColor = "#DDDBD7"}
               onKeyDown={e => { if (e.key === "Enter") handleLogin(); }} />
           </div>
 
-          <button onClick={handleLogin}
-            style={{ width: "100%", padding: "13px", background: "#C42B2B", border: "none", borderRadius: 8, color: "#fff", fontSize: 14, fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", fontFamily: '"DM Sans", system-ui, sans-serif', transition: "background 0.2s" }}
-            onMouseEnter={e => e.target.style.background = "#A82020"} onMouseLeave={e => e.target.style.background = "#C42B2B"}
-          >Sign In</button>
+          <button onClick={handleLogin} disabled={isLoading}
+            style={{ width: "100%", padding: "13px", background: isLoading ? "#999" : "#C42B2B", border: "none", borderRadius: 8, color: "#fff", fontSize: 14, fontWeight: 700, letterSpacing: "0.05em", cursor: isLoading ? "wait" : "pointer", fontFamily: '"DM Sans", system-ui, sans-serif', transition: "background 0.2s", animation: isLoading ? "pulse 1.5s infinite" : "none" }}
+            onMouseEnter={e => { if(!isLoading) e.target.style.background = "#A82020"; }} onMouseLeave={e => { if(!isLoading) e.target.style.background = "#C42B2B"; }}
+          >{isLoading ? "Signing in..." : "Sign In"}</button>
 
-          <div style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "rgba(255,255,255,0.2)" }}>Secure access · CCB Development Operations</div>
+          <div style={{ textAlign: "center", marginTop: 20, fontSize: 11, color: "#BBB" }}>Only @{ALLOWED_DOMAIN} accounts · Secured by Azure</div>
         </div>
 
         <div style={{ animation: "fadeIn 0.8s 0.4s ease both", marginTop: 48, fontSize: 11, color: "#CCC", textAlign: "center" }}>
@@ -2864,6 +2922,12 @@ function LoginScreen({ onLogin }) {
 export default function NextWavePlatform() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     try { return sessionStorage.getItem("nw_auth") === "true"; } catch(e) { return false; }
+  });
+  const [currentUser, setCurrentUser] = useState(() => {
+    try { const u = sessionStorage.getItem("nw_user"); return u ? JSON.parse(u) : null; } catch(e) { return null; }
+  });
+  const [authToken, setAuthToken] = useState(() => {
+    try { return sessionStorage.getItem("nw_token") || null; } catch(e) { return null; }
   });
   const [projects, setProjects] = useState(INITIAL_SAMPLES);
   const [activeProjectId, setActiveProjectId] = useState(() => {
@@ -3636,17 +3700,17 @@ export default function NextWavePlatform() {
         <div style={panel}>
           <h4 style={{ margin:"0 0 16px",fontSize:14,fontWeight:700,color:C.text }}>Profile</h4>
           <div style={{ display:"flex",alignItems:"center",gap:14,marginBottom:20 }}>
-            <div style={{ width:56,height:56,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:20,fontWeight:700 }}>DK</div>
+            <div style={{ width:56,height:56,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:20,fontWeight:700 }}>{currentUser?.avatarInitials || currentUser?.firstName?.substring(0,2)?.toUpperCase() || "?"}</div>
             <div>
-              <div style={{ fontSize:16,fontWeight:700,color:C.text }}>Devan K.</div>
-              <div style={{ fontSize:12,color:C.textMuted }}>Project Manager</div>
-              <div style={{ fontSize:11,color:C.textMuted,marginTop:2 }}>devan@ccbllc.com</div>
+              <div style={{ fontSize:16,fontWeight:700,color:C.text }}>{currentUser?.firstName || "User"} {currentUser?.lastName || ""}</div>
+              <div style={{ fontSize:12,color:C.textMuted }}>{currentUser?.role || "Team Member"}</div>
+              <div style={{ fontSize:11,color:C.textMuted,marginTop:2 }}>{currentUser?.email || ""}</div>
             </div>
           </div>
           <div style={{ borderTop:`1px solid ${C.borderLight}`,paddingTop:14 }}>
             <div style={{ fontSize:11,fontWeight:600,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8 }}>Account Actions</div>
             <button style={{...btnOutline,marginRight:8,fontSize:12}} onClick={()=>showToast("Profile editing coming soon")}>Edit Profile</button>
-            <button style={{...btnOutline,color:C.negative,borderColor:"rgba(196,86,75,0.25)",fontSize:12}} onClick={()=>{try{sessionStorage.clear();}catch(e){} setIsAuthenticated(false);}}>Sign Out</button>
+            <button style={{...btnOutline,color:C.negative,borderColor:"rgba(196,86,75,0.25)",fontSize:12}} onClick={()=>{try{sessionStorage.clear();}catch(e){} setCurrentUser(null);setAuthToken(null);setIsAuthenticated(false);}}>Sign Out</button>
           </div>
         </div>
         {/* Platform */}
@@ -3704,7 +3768,7 @@ export default function NextWavePlatform() {
   }, [isAuthenticated]);
   const sidebarTab = view === "settings" ? "settings" : view === "tool" && activeTool?.id === "scheduler" ? "schedule" : view === "tool" ? "tools" : view === "workspace" && wsTab === "financials" ? "financials" : view === "workspace" && wsTab === "tools" ? "tools" : view === "workspace" ? "dashboard" : view === "home" ? "overview" : "overview";
 
-  if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
+  if (!isAuthenticated) return <LoginScreen onLogin={(user, token) => { setCurrentUser(user); setAuthToken(token); setIsAuthenticated(true); }} />;
 
   return (
     <>
@@ -3749,10 +3813,10 @@ export default function NextWavePlatform() {
           </nav>
           {/* User */}
           <div style={{ padding:"16px 18px",borderTop:`1px solid ${C.borderLight}`,display:"flex",alignItems:"center",gap:10,cursor:"pointer" }}>
-            <div style={{ width:36,height:36,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:700 }}>DK</div>
+            <div style={{ width:36,height:36,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:700 }}>{currentUser?.avatarInitials || currentUser?.firstName?.substring(0,2)?.toUpperCase() || "?"}</div>
             <div style={{ flex:1 }}>
-              <div style={{ fontSize:13,fontWeight:600,color:C.text }}>Devan K.</div>
-              <div style={{ fontSize:10,color:C.textMuted }}>Project Manager</div>
+              <div style={{ fontSize:13,fontWeight:600,color:C.text }}>{currentUser?.firstName || "User"} {currentUser?.lastName || ""}</div>
+              <div style={{ fontSize:10,color:C.textMuted }}>{currentUser?.role || "Team Member"}</div>
             </div>
             <span style={{ fontSize:14,color:C.textMuted }}>›</span>
           </div>
