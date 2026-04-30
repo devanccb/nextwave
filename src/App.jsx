@@ -2173,12 +2173,18 @@ function LoginScreen({ onLogin }) {
 export default function NextWavePlatform() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [projects, setProjects] = useState(INITIAL_SAMPLES);
-  const [activeProjectId, setActiveProjectId] = useState(INITIAL_SAMPLES[0]?.id || null);
-  const [view, setView] = useState("home");
+  const [activeProjectId, setActiveProjectId] = useState(() => {
+    try { return sessionStorage.getItem("nw_projectId") || INITIAL_SAMPLES[0]?.id || null; } catch(e) { return INITIAL_SAMPLES[0]?.id || null; }
+  });
+  const [view, setView] = useState(() => {
+    try { return sessionStorage.getItem("nw_view") || "home"; } catch(e) { return "home"; }
+  });
   const [loading, setLoading] = useState(false);
   const [apiSynced, setApiSynced] = useState(false);
   const [activeTool, setActiveTool] = useState(null);
-  const [wsTab, setWsTab] = useState("overview");
+  const [wsTab, setWsTab] = useState(() => {
+    try { return sessionStorage.getItem("nw_wsTab") || "overview"; } catch(e) { return "overview"; }
+  });
   const [form, setForm] = useState({});
   const [toast, setToast] = useState(null);
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
@@ -2356,7 +2362,7 @@ export default function NextWavePlatform() {
   // ─── HOME ───
   const renderHome = () => (<div>
     <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:28 }}>
-      <div><h1 style={{ fontSize:28,fontWeight:700,margin:0 }}>Projects</h1><p style={{ color:C.textMuted,fontSize:13,margin:"6px 0 0" }}>{projects.length===0?"Create your first development project.":projects.length+" project"+(projects.length!==1?"s":"")}</p></div>
+      <div><h1 style={{ fontSize:28,fontWeight:700,margin:0 }}>Overview</h1><p style={{ color:C.textMuted,fontSize:13,margin:"6px 0 0" }}>{projects.length===0?"Create your first development project.":projects.length+" project"+(projects.length!==1?"s":"")+" — select one to open its dashboard"}</p></div>
       <button style={btn(C.accent,"#fff")} onClick={createNewProject}>+ New Project</button>
     </div>
     {projects.length===0?(<div style={{...panel,border:`2px dashed ${C.border}`,textAlign:"center",padding:"64px 24px"}}><div style={{ fontSize:44,marginBottom:12 }}>🏗️</div><p style={{ color:C.textMuted,fontSize:14,maxWidth:360,margin:"0 auto 20px" }}>Each project is a data container for your development.</p><button style={btn(C.accent,"#fff")} onClick={createNewProject}>Create First Project</button></div>):(
@@ -2941,7 +2947,17 @@ export default function NextWavePlatform() {
     { id:"schedule", icon:"📅", label:"Schedule" },
     { id:"settings", icon:"⚙️", label:"Settings" },
   ];
-  const sidebarTab = view === "settings" ? "settings" : view === "workspace" ? wsTab : view === "home" ? "dashboard" : "overview";
+  // Persist state to sessionStorage on changes
+  useEffect(() => {
+    try { sessionStorage.setItem("nw_view", view); } catch(e) {}
+  }, [view]);
+  useEffect(() => {
+    try { sessionStorage.setItem("nw_wsTab", wsTab); } catch(e) {}
+  }, [wsTab]);
+  useEffect(() => {
+    try { if(activeProjectId) sessionStorage.setItem("nw_projectId", activeProjectId); else sessionStorage.removeItem("nw_projectId"); } catch(e) {}
+  }, [activeProjectId]);
+  const sidebarTab = view === "settings" ? "settings" : view === "workspace" ? "dashboard" : view === "home" ? "overview" : "overview";
 
   if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
@@ -2961,7 +2977,7 @@ export default function NextWavePlatform() {
         {/* ━━━ LEFT SIDEBAR ━━━ */}
         <aside style={{ width:220,background:C.surface,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",flexShrink:0,zIndex:60 }}>
           {/* Logo */}
-          <div style={{ padding:"20px 22px 16px",cursor:"pointer" }} onClick={()=>{setActiveProjectId(null);setView("home");}}>
+          <div style={{ padding:"20px 22px 16px",cursor:"pointer" }} onClick={()=>{setView("home");}}>
             <img src={NW_LOGO_TAG} alt="Next Wave" style={{ height:38,width:"auto" }} />
 
           </div>
@@ -2970,13 +2986,13 @@ export default function NextWavePlatform() {
             {sidebarItems.map(item => {
               const isActive = sidebarTab === item.id || (item.id === "overview" && view === "workspace" && wsTab === "overview");
               return (<button key={item.id} onClick={() => {
-                if (item.id === "overview" && activeProject) { setWsTab("overview"); setView("workspace"); }
-                else if (item.id === "dashboard") { setActiveProjectId(null); setView("home"); }
+                if (item.id === "overview") { setView("home"); }
+                else if (item.id === "dashboard" && activeProject) { setWsTab("overview"); setView("workspace"); }
                 else if (item.id === "financials" && activeProject) { setWsTab("financials"); setView("workspace"); }
                 else if (item.id === "tools" && activeProject) { setWsTab("tools"); setView("workspace"); }
-                else if (item.id === "schedule" && activeProject) { setWsTab("tools"); setView("workspace"); }
+                else if (item.id === "schedule" && activeProject) { setWsTab("overview"); setView("workspace"); }
                 else if (item.id === "settings") { setView("settings"); }
-                else if (!activeProject && (item.id === "financials" || item.id === "tools" || item.id === "schedule")) { showToast("Select a project first"); }
+                else if (!activeProject && (item.id === "dashboard" || item.id === "financials" || item.id === "tools" || item.id === "schedule")) { showToast("Select a project first"); }
               }} style={{
                 display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 14px",borderRadius:10,border:"none",
                 background:isActive ? C.accentSoft : "transparent",color:isActive ? C.accent : C.textMid,
@@ -3002,16 +3018,12 @@ export default function NextWavePlatform() {
           {/* Top Bar */}
           <header style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 28px",background:C.surface,borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,zIndex:50 }}>
             <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-              {projects.length>0&&(<select style={{...fieldInput,width:"auto",minWidth:180,padding:"8px 14px",fontSize:13,cursor:"pointer",borderRadius:8,fontWeight:600}} value={activeProjectId||""} onChange={e=>{const id=e.target.value;if(id){setActiveProjectId(id);setWsTab("overview");setView("workspace");}else{setActiveProjectId(null);setView("home");}}}>
-                <option value="">Select Project...</option>{projects.map(p=>(<option key={p.id} value={p.id}>{p.project_info.name}</option>))}
+              {projects.length>0&&(<select style={{...fieldInput,width:"auto",minWidth:200,padding:"8px 14px",fontSize:13,cursor:"pointer",borderRadius:8,fontWeight:600}} value={activeProjectId||""} onChange={e=>{const id=e.target.value;if(id){setActiveProjectId(id);setWsTab("overview");setView("workspace");}else{setView("home");}}}>
+                <option value="">All Projects</option>{projects.map(p=>(<option key={p.id} value={p.id}>{p.project_info.name}</option>))}
               </select>)}
             </div>
             <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-              {projects.length>0&&(<select style={{...fieldInput,width:"auto",minWidth:160,padding:"8px 14px",fontSize:13,cursor:"pointer",borderRadius:8,fontWeight:600}} value={activeProjectId||""} onChange={e=>{const id=e.target.value;if(id){setActiveProjectId(id);setWsTab("overview");setView("workspace");}else{setActiveProjectId(null);setView("home");}}}>
-                <option value="">Select Project...</option>{projects.map(p=>(<option key={p.id} value={p.id}>{p.project_info.name}</option>))}
-              </select>)}
-              <button onClick={()=>{if(activeProject){setWsTab("overview");setView("workspace");showToast("Timeline events loaded");}else{showToast("Select a project first");}}} style={{ width:38,height:38,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s" }} title="Project Timeline">📅</button>
-
+              {activeProject && <span style={{ fontSize:12,color:C.textMuted }}>{new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</span>}
             </div>
           </header>
 
