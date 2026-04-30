@@ -3685,7 +3685,7 @@ export default function NextWavePlatform() {
   useEffect(() => {
     try { sessionStorage.setItem("nw_auth", isAuthenticated ? "true" : "false"); } catch(e) {}
   }, [isAuthenticated]);
-  const sidebarTab = view === "settings" ? "settings" : view === "tool" && activeTool?.id === "scheduler" ? "schedule" : view === "tool" ? "tools" : view === "workspace" ? "dashboard" : view === "home" ? "overview" : "overview";
+  const sidebarTab = view === "settings" ? "settings" : view === "tool" && activeTool?.id === "scheduler" ? "schedule" : view === "tool" ? "tools" : view === "workspace" && wsTab === "financials" ? "financials" : view === "workspace" && wsTab === "tools" ? "tools" : view === "workspace" ? "dashboard" : view === "home" ? "overview" : "overview";
 
   if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
