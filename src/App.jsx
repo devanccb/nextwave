@@ -2359,38 +2359,87 @@ export default function NextWavePlatform() {
     </div>);
   };
 
-  // ─── HOME ───
-  const renderHome = () => (<div>
-    <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:28 }}>
-      <div><h1 style={{ fontSize:28,fontWeight:700,margin:0 }}>Overview</h1><p style={{ color:C.textMuted,fontSize:13,margin:"6px 0 0" }}>{projects.length===0?"Create your first development project.":projects.length+" project"+(projects.length!==1?"s":"")+" — select one to open its dashboard"}</p></div>
-      <button style={btn(C.accent,"#fff")} onClick={createNewProject}>+ New Project</button>
-    </div>
-    {projects.length===0?(<div style={{...panel,border:`2px dashed ${C.border}`,textAlign:"center",padding:"64px 24px"}}><div style={{ fontSize:44,marginBottom:12 }}>🏗️</div><p style={{ color:C.textMuted,fontSize:14,maxWidth:360,margin:"0 auto 20px" }}>Each project is a data container for your development.</p><button style={btn(C.accent,"#fff")} onClick={createNewProject}>Create First Project</button></div>):(
-    <div style={{ display:"grid",gap:14 }}>{projects.map(p=>{
-      const oc=Object.values(p.tool_outputs).reduce((s,a)=>s+a.length,0);
-      const profit=p.financials.estimated_revenue-p.financials.total_budget;
-      return (<div key={p.id} onClick={()=>{setActiveProjectId(p.id);setWsTab("overview");setView("workspace");}} style={{...panel,cursor:"pointer",transition:"all 0.15s"}}
-        onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.06)";}}
-        onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.boxShadow="none";}}>
-        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16 }}>
-          <div style={{ flex:1,minWidth:0 }}>
-            <h3 style={{ margin:0,fontSize:18,fontWeight:700 }}>{p.project_info.name}</h3>
-            <p style={{ color:C.textMuted,fontSize:12,margin:"3px 0 0" }}>{[p.project_info.city,p.project_info.state].filter(Boolean).join(", ")||"No location"} · {p.project_info.development_type}</p>
+  // ─── HOME / OVERVIEW ───
+  const renderHome = () => {
+    // Portfolio totals
+    const totBudget = projects.reduce((s,p)=>s+p.financials.total_budget,0);
+    const totRevenue = projects.reduce((s,p)=>s+p.financials.estimated_revenue,0);
+    const totProfit = totRevenue - totBudget;
+    const totLots = projects.reduce((s,p)=>s+(p.project_info.lot_count||0),0);
+    return (<div>
+      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:24 }}>
+        <div><h1 style={{ fontSize:26,fontWeight:700,margin:0 }}>Portfolio Overview</h1><p style={{ color:C.textMuted,fontSize:13,margin:"4px 0 0" }}>{projects.length} development{projects.length!==1?"s":""} · {totLots} total lots</p></div>
+        <button style={btn(C.accent,"#fff")} onClick={createNewProject}>+ New Project</button>
+      </div>
+      {/* Portfolio Summary Bar */}
+      {projects.length > 0 && (
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:24 }}>
+          <div style={{...panel,padding:"16px 20px",textAlign:"center"}}>
+            <div style={{ fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6 }}>Total Budget</div>
+            <div style={{ fontSize:20,fontWeight:700,color:C.text,fontVariantNumeric:"tabular-nums" }}>{curK(totBudget)}</div>
           </div>
-          <div style={{ display:"flex",gap:6,flexShrink:0,marginLeft:12 }}>
-            <span style={tag(true)}>{p.project_info.lot_count} Lots</span>
-            {oc>0&&<span style={tag(false)}>{oc} {oc===1?"Output":"Outputs"}</span>}
+          <div style={{...panel,padding:"16px 20px",textAlign:"center"}}>
+            <div style={{ fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6 }}>Total Revenue</div>
+            <div style={{ fontSize:20,fontWeight:700,color:C.text,fontVariantNumeric:"tabular-nums" }}>{curK(totRevenue)}</div>
+          </div>
+          <div style={{...panel,padding:"16px 20px",textAlign:"center"}}>
+            <div style={{ fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6 }}>Projected Profit</div>
+            <div style={{ fontSize:20,fontWeight:700,color:totProfit>=0?C.positive:C.negative,fontVariantNumeric:"tabular-nums" }}>{curK(totProfit)}</div>
+          </div>
+          <div style={{...panel,padding:"16px 20px",textAlign:"center"}}>
+            <div style={{ fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6 }}>Active Projects</div>
+            <div style={{ fontSize:20,fontWeight:700,color:C.accent }}>{projects.length}</div>
           </div>
         </div>
-        <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,borderTop:`1px solid ${C.borderLight}`,paddingTop:16 }}>
-          <div style={{ textAlign:"center" }}><div style={statV}>{cur(p.financials.total_budget)}</div><div style={statL}>Budget</div></div>
-          <div style={{ textAlign:"center" }}><div style={statV}>{cur(p.financials.target_price_per_home)}</div><div style={statL}>Per Home</div></div>
-          <div style={{ textAlign:"center" }}><div style={statV}>{cur(p.financials.estimated_revenue)}</div><div style={statL}>Revenue</div></div>
-          <div style={{ textAlign:"center" }}><div style={{...statV,color:profit>=0?C.positive:C.negative}}>{cur(profit)}</div><div style={statL}>Est. Profit</div></div>
-        </div>
-      </div>);
-    })}</div>)}
-  </div>);
+      )}
+      {projects.length===0?(<div style={{...panel,border:`2px dashed ${C.border}`,textAlign:"center",padding:"64px 24px"}}><div style={{ fontSize:44,marginBottom:12 }}>🏗️</div><p style={{ color:C.textMuted,fontSize:14,maxWidth:360,margin:"0 auto 20px" }}>Create your first development to get started.</p><button style={btn(C.accent,"#fff")} onClick={createNewProject}>Create First Project</button></div>):(
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(380px,1fr))",gap:16 }}>{projects.map(p=>{
+        const fin = computeProjectFinancials(p);
+        const profit=p.financials.estimated_revenue-p.financials.total_budget;
+        const margin = p.financials.estimated_revenue > 0 ? Math.round(profit/p.financials.estimated_revenue*100) : 0;
+        const isSelected = activeProjectId === p.id;
+        return (<div key={p.id} onClick={()=>{setActiveProjectId(p.id);setWsTab("overview");setView("workspace");}} style={{...panel,cursor:"pointer",transition:"all 0.2s",borderColor:isSelected?C.accent:C.border,borderWidth:isSelected?"2px":"1px",position:"relative",overflow:"hidden"}}
+          onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.08)";}}
+          onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
+          {/* Status bar at top */}
+          <div style={{ position:"absolute",top:0,left:0,right:0,height:3,background:fin.statusColor,opacity:0.7 }} />
+          <div style={{ paddingTop:8 }}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12 }}>
+              <div style={{ flex:1,minWidth:0 }}>
+                <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:4 }}>
+                  <h3 style={{ margin:0,fontSize:17,fontWeight:700 }}>{p.project_info.name}</h3>
+                  {isSelected && <span style={{ fontSize:9,fontWeight:700,color:C.accent,background:C.accentSoft,padding:"2px 6px",borderRadius:4 }}>ACTIVE</span>}
+                </div>
+                <p style={{ color:C.textMuted,fontSize:11,margin:0 }}>{[p.project_info.city,p.project_info.state].filter(Boolean).join(", ")||"No location"} · {p.project_info.development_type}</p>
+              </div>
+              <span style={{ fontSize:10,fontWeight:700,color:C.accent,background:C.accentSoft,padding:"4px 10px",borderRadius:6 }}>{p.project_info.lot_count||0} lots</span>
+            </div>
+            {/* Phase indicator */}
+            <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:14 }}>
+              <span style={{ width:6,height:6,borderRadius:"50%",background:fin.statusColor,flexShrink:0 }} />
+              <span style={{ fontSize:11,fontWeight:600,color:fin.statusColor }}>{fin.statusLabel}</span>
+              <span style={{ fontSize:11,color:C.textMuted }}>· {fin.projectPhase.name}</span>
+            </div>
+            {/* Key metrics */}
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,borderTop:`1px solid ${C.borderLight}`,paddingTop:14 }}>
+              <div>
+                <div style={{ fontSize:16,fontWeight:700,color:C.text,fontVariantNumeric:"tabular-nums" }}>{curK(p.financials.total_budget)}</div>
+                <div style={{ fontSize:9,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.08em",marginTop:2 }}>Budget</div>
+              </div>
+              <div>
+                <div style={{ fontSize:16,fontWeight:700,color:C.text,fontVariantNumeric:"tabular-nums" }}>{curK(p.financials.estimated_revenue)}</div>
+                <div style={{ fontSize:9,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.08em",marginTop:2 }}>Revenue</div>
+              </div>
+              <div>
+                <div style={{ fontSize:16,fontWeight:700,color:profit>=0?C.positive:C.negative,fontVariantNumeric:"tabular-nums" }}>{curK(profit)}</div>
+                <div style={{ fontSize:9,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.08em",marginTop:2 }}>{margin}% margin</div>
+              </div>
+            </div>
+          </div>
+        </div>);
+      })}</div>)}
+    </div>);
+  };
 
   // ─── WORKSPACE ───
   const renderWorkspace = () => {
@@ -2957,7 +3006,7 @@ export default function NextWavePlatform() {
   useEffect(() => {
     try { if(activeProjectId) sessionStorage.setItem("nw_projectId", activeProjectId); else sessionStorage.removeItem("nw_projectId"); } catch(e) {}
   }, [activeProjectId]);
-  const sidebarTab = view === "settings" ? "settings" : view === "workspace" ? "dashboard" : view === "home" ? "overview" : "overview";
+  const sidebarTab = view === "settings" ? "settings" : view === "tool" && activeTool?.id === "scheduler" ? "schedule" : view === "tool" ? "tools" : view === "workspace" ? "dashboard" : view === "home" ? "overview" : "overview";
 
   if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
@@ -2984,13 +3033,13 @@ export default function NextWavePlatform() {
           {/* Nav Items */}
           <nav style={{ flex:1,padding:"8px 12px" }}>
             {sidebarItems.map(item => {
-              const isActive = sidebarTab === item.id || (item.id === "overview" && view === "workspace" && wsTab === "overview");
+              const isActive = sidebarTab === item.id;
               return (<button key={item.id} onClick={() => {
                 if (item.id === "overview") { setView("home"); }
                 else if (item.id === "dashboard" && activeProject) { setWsTab("overview"); setView("workspace"); }
                 else if (item.id === "financials" && activeProject) { setWsTab("financials"); setView("workspace"); }
                 else if (item.id === "tools" && activeProject) { setWsTab("tools"); setView("workspace"); }
-                else if (item.id === "schedule" && activeProject) { setWsTab("overview"); setView("workspace"); }
+                else if (item.id === "schedule" && activeProject) { const sched = TOOL_REGISTRY.find(t=>t.id==="scheduler"); if(sched&&sched.status==="active"){setActiveTool(sched);setView("tool");}else{setWsTab("overview");setView("workspace");} }
                 else if (item.id === "settings") { setView("settings"); }
                 else if (!activeProject && (item.id === "dashboard" || item.id === "financials" || item.id === "tools" || item.id === "schedule")) { showToast("Select a project first"); }
               }} style={{
