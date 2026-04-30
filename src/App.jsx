@@ -828,6 +828,8 @@ function ProFormaTool({ project, onSave, onClose }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [inputsOpen, setInputsOpen] = useState(false);
 
+  const [a, setA] = useState({ ...DEFAULT_ASSUMPTIONS });
+
   // ─── SAVE TO PROJECT (Platform Integration) ───
   const handleSaveToProject = useCallback(() => {
     if (!onSave) return;
@@ -837,25 +839,23 @@ function ProFormaTool({ project, onSave, onClose }) {
     const current = scenario === "Low" ? lo : scenario === "High" ? hi : mi;
     onSave({
       tool_id: "proforma",
-      label: `${scenario} Scenario${activeDeal ? " — " + (deals.find(d=>d.id===activeDealId)?.name||"Deal") : ""}`,
+      label: `${scenario} Scenario — ${deals.find(d=>d.id===activeDealId)?.name||"Deal"}`,
       data: {
         scenario,
         assumptions: { ...a },
         computed: {
           grossProfit: current.totalReturn,
-          totalROI: current.totalROI,
+          totalROI: current.returnPct,
           xirr: current.purchaseXirr,
-          margin: (current.grossMargin * 100).toFixed(1),
+          margin: (current.safety * 100).toFixed(1),
           netProfit: current.totalReturn,
-          grossSales: current.grossSales,
+          grossSales: current.gross,
           totalCapital: current.totalCapital,
         },
         scenarios: { low: lo, middle: mi, high: hi },
       },
     });
   }, [a, scenario, onSave, deals, activeDealId]);
-
-  const [a, setA] = useState({ ...DEFAULT_ASSUMPTIONS });
 
   // Load deals from storage on mount
   useEffect(() => {
