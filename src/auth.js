@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 export const API_BASE = "https://nextwave-api.azurewebsites.net";
+export const TENANT_ID = "3957c68d-e409-4242-b07c-b6e289dfee4b";
 
 export function useAuth() {
   const [user, setUser] = useState(undefined);
@@ -58,6 +59,17 @@ export function loginUrl(returnTo = "/") {
   return `/.auth/login/aad?post_login_redirect_uri=${encodeURIComponent(returnTo)}`;
 }
 
-export function logoutUrl(returnTo = "/") {
-  return `/.auth/logout?post_logout_redirect_uri=${encodeURIComponent(returnTo)}`;
+export function logoutUrl() {
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const microsoftLogout =
+    `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/logout` +
+    `?post_logout_redirect_uri=${encodeURIComponent(origin + "/")}`;
+  return `/.auth/logout?post_logout_redirect_uri=${encodeURIComponent(microsoftLogout)}`;
+}
+
+export function signOut() {
+  if (typeof window !== "undefined") {
+    window.location.href = logoutUrl();
+  }
 }

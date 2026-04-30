@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, Legend, ReferenceLine } from "recharts";
+import { signOut } from "./auth.js";
 
 /*
  ╔══════════════════════════════════════════════════════════════╗
@@ -3611,7 +3612,7 @@ export default function NextWavePlatform() {
           <div style={{ borderTop:`1px solid ${C.borderLight}`,paddingTop:14 }}>
             <div style={{ fontSize:11,fontWeight:600,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8 }}>Account Actions</div>
             <button style={{...btnOutline,marginRight:8,fontSize:12}} onClick={()=>showToast("Profile editing coming soon")}>Edit Profile</button>
-            <button style={{...btnOutline,color:C.negative,borderColor:"rgba(196,86,75,0.25)",fontSize:12}} onClick={()=>{window.location.href="/.auth/logout?post_logout_redirect_uri=/";}}>Sign Out</button>
+            <button style={{...btnOutline,color:C.negative,borderColor:"rgba(196,86,75,0.25)",fontSize:12}} onClick={signOut}>Sign Out</button>
           </div>
         </div>
         {/* Platform */}
